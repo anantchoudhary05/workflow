@@ -40,10 +40,10 @@ class TaskPolicy
             || ($user->hasAbility('work-tasks') && in_array($user->id, [$task->assignee_id, $task->reviewer_id], true));
     }
 
-    /** Only Managers (and administrators) may mark work as urgent. */
+    /** Team Leads, Managers and administrators set task priority, Urgent included, on projects they can access. */
     public function setPriority(User $user, Task $task): bool
     {
-        return $user->hasAbility('set-urgency') && $user->canAccessProject($task->project_id);
+        return $user->hasAbility('set-task-priority') && $user->canAccessProject($task->project_id);
     }
 
     public function comment(User $user, Task $task): bool

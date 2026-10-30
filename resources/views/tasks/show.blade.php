@@ -16,7 +16,7 @@
                 <form method="POST" action="{{ route('tasks.priority', $task) }}" class="flex items-center gap-1">
                     @csrf
                     <x-field name="priority" type="select" :options="App\Enums\Priority::options()" :value="$task->priority" aria-label="Priority" />
-                    <button class="btn" title="Managers set priority and urgency"><x-icon name="flag" :size="16" /> Set priority</button>
+                    <button class="btn" title="Team Leads and Managers set task priority, Urgent included"><x-icon name="flag" :size="16" /> Set priority</button>
                 </form>
             @endcan
             @can('update', $task)<a href="{{ route('tasks.edit', $task) }}" class="btn"><x-icon name="edit" :size="16" /> Edit</a>@endcan

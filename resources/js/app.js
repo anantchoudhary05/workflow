@@ -8,6 +8,7 @@ import { initRepeaters } from './modules/repeaters';
 import { initAutosubmit } from './modules/autosubmit';
 import { initPrint } from './modules/print';
 import { initDocSource } from './modules/doc-source';
+import { initTabs } from './modules/tabs';
 
 document.addEventListener('DOMContentLoaded', () => {
     initSidebar();
@@ -20,4 +21,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initAutosubmit();
     initPrint();
     initDocSource();
+    initTabs();
 });

@@ -6,7 +6,7 @@
 |---|---|---|
 | Administrator | System owner | Everything, including user and role management and the rule overrides. Every override requires a written reason and is recorded in the audit log. |
 | Manager | Delivery / project manager | Reviews every project, sets deadlines, priority and **urgency**, decides requirements and change requests, manages clients and quotations, records client approvals, closes projects and marks Team Lead work **Ready for preview** or **Needs corrections**. |
-| Team Lead | Head of the dev team | Splits work into tasks and milestones and assigns the team, works own tasks, reviews tasks, runs QA and the release, uploads client documents, picks up Marketing handoffs and requests a manager review. Cannot mark work urgent or approve for client preview. |
+| Team Lead | Head of the dev team | Splits work into tasks and milestones and assigns the team, works own tasks, reviews tasks, runs QA and the release, uploads client documents, picks up Marketing handoffs and requests a manager review. Sets task priority, Urgent included. Cannot set project deadlines, mark a project urgent or approve for client preview. |
 | Developer | Developer / designer | Works assigned tasks on member projects, logs time, records client communication, previews and files. |
 | QA / Reviewer | Tester | Everything a Developer can do, plus task review, QA (test cases and defects) and the release checklist. |
 | Marketing | Client onboarding | Onboards clients, creates projects, captures requirements, quotations and client approvals, records communication, uploads client documents and hands projects to the dev team. Does not create or assign tasks. |
@@ -21,7 +21,8 @@
 | See all projects | ✓ | ✓ | ✓ | Member | Member | ✓ | ✓ (read-only) |
 | Create projects | ✓ | ✓ | – | – | – | ✓ | – |
 | Edit projects, members, status | ✓ | ✓ | ✓ | – | – | – | – |
-| Set deadlines and mark work urgent | ✓ | ✓ | – | – | – | – | – |
+| Set project deadlines and mark a project urgent | ✓ | ✓ | – | – | – | – | – |
+| Set task priority (Urgent included) | ✓ | ✓ | ✓ | – | – | – | – |
 | Create / assign tasks, milestones | ✓ | ✓ | ✓ | – | – | – | – |
 | Work own tasks, log time | ✓ | ✓ | ✓ | ✓ | ✓ | – | – |
 | Review tasks, QA, release checklist | ✓ | ✓ | ✓ | – | ✓ | – | – |
@@ -61,9 +62,16 @@ On the client page (and in the client documents section of each of that client's
 
 Category and description work the same way for both. Link documents show a link icon and the site name (for example `drive.google.com`) and open in a new tab. Make sure the cloud file is shared with the team. Who can add, view and delete documents is the same for links and files.
 
+### My work
+
+- **My work** in the sidebar lists your open tasks from every project, grouped as Overdue, Due today, Blocked, Changes requested, Next 7 days and Later. Each task shows its project. Reviews waiting on you and client follow-ups you own are listed on the right.
+- Use the **Project** filter to see one project only. It lists the projects where you have work.
+- On a project page, the **My work** panel shows only what is assigned to you in that project: open tasks (overdue and urgent ones are marked in red), reviews waiting on you and your client follow-ups. **Start** moves a Backlog or Ready task to In progress. The **My to-dos** tab holds your private to-dos for the project. Marketing and Management open on the to-do tab when they have no tasks there.
+- Deleted tasks and tasks of deleted projects are not shown.
+
 ### Private to-dos
 
-Anyone can keep a personal to-do list on the dashboard, on a project page (linked to that project) or under **My to-dos**. To-dos are visible only to their owner, administrators included, and are not written to the activity log.
+Anyone can keep a personal to-do list on the dashboard, on a project page (the **My to-dos** tab of the My work panel, linked to that project) or under **My to-dos**. To-dos are visible only to their owner, administrators included, and are not written to the activity log.
 
 ### Accounts
 

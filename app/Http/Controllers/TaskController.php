@@ -120,7 +120,7 @@ class TaskController extends Controller
             : back()->with('status', "Task moved to {$task->status->label()}.");
     }
 
-    /** Manager sets a task's priority (including Urgent) from the task page; the assignee is told when it becomes urgent. */
+    /** A Team Lead or Manager sets a task's priority (including Urgent) from the task page; the assignee is told when it becomes urgent. */
     public function priority(Request $request, Task $task): RedirectResponse
     {
         $this->authorize('setPriority', $task);

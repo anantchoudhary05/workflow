@@ -33,7 +33,7 @@ enum Role: string
         return match ($this) {
             self::Admin => 'Full access, user and role management, administrator overrides.',
             self::Manager => 'Reviews every project, sets deadlines, priority and urgency, approves work for client preview.',
-            self::TeamLead => 'Plans delivery: splits work into tasks, assigns the team, works own tasks, requests manager review.',
+            self::TeamLead => 'Plans delivery: splits work into tasks, assigns the team, sets task priority (Urgent included), works own tasks, requests manager review.',
             self::Developer => 'Works assigned tasks on member projects, logs time, records client communication.',
             self::Reviewer => 'Developer abilities plus task reviews, QA and release checklist updates.',
             self::Marketing => 'Onboards clients, captures requirements, uploads client documents, quotations, hands projects to the dev team.',
@@ -66,7 +66,7 @@ enum Role: string
         $teamLead = [
             ...$reviewer, ...$oversight,
             'manage-projects', 'manage-tasks', 'manage-milestones', 'manage-requirements', 'assess-change-requests',
-            'manage-release', 'manage-client-documents', 'review-work', 'request-review', 'receive-handoffs',
+            'manage-release', 'manage-client-documents', 'review-work', 'request-review', 'receive-handoffs', 'set-task-priority',
         ];
 
         return match ($this) {

@@ -4,7 +4,7 @@ Last updated: 30 Oct 2026. This file reflects what is in the code. It does not d
 
 ## Summary
 
-All five planned phases have a working first version, plus the department roles update (30 Oct 2026): seven roles, private to-dos, client documents, a manager review queue, urgency, Marketing → dev handoff and role-specific dashboards, and admin-only soft delete with a Trash page (30 Oct 2026). Screens, server-side rules and authorization are in place. The automated feature tests (189 tests, 1,017 assertions) pass on SQLite in memory and on MariaDB 11.4 in strict mode.
+All five planned phases have a working first version, plus the department roles update (30 Oct 2026): seven roles, private to-dos, client documents, a manager review queue, urgency, Marketing → dev handoff and role-specific dashboards, admin-only soft delete with a Trash page (30 Oct 2026), and a per-project My work panel (30 Oct 2026). Screens, server-side rules and authorization are in place. The automated feature tests (198 tests, 1,098 assertions) pass on SQLite in memory and on MariaDB 11.4 in strict mode.
 
 See "Not verified" below.
 
@@ -38,9 +38,10 @@ See "Not verified" below.
 | 6 | Private to-dos | Done | Every user has a personal list (title, notes, due date, priority, optional project link). Shown on the dashboard, on the project page and on **My to-dos**. Only the owner can see or change them; administrators cannot. Not written to the activity log. |
 | 6 | Client documents | Done | Marketing, Manager, Team Lead and Admin upload PDF, Word, Excel, PowerPoint, images, text and ZIP files (size limit from `config/doc.php`) with a category and description. Stored on the private disk; download and inline preview (PDF/images) go through an authorized route. Instead of a file they can add a cloud link (Google Drive, OneDrive, Dropbox and so on): http/https only, up to 2,048 characters, title required. Link documents show a link icon and the site name and open in a new tab. Shown on the client page and on every project of that client. Deleting is a soft delete. |
 | 6 | Manager review queue | Done | A Team Lead requests a review on a project; a Manager marks it **Ready for preview** or **Needs corrections** (notes required). Both sides are notified. |
-| 6 | Urgent flag | Done | Only Manager and Admin can mark a task urgent. Urgent tasks and projects appear in a dashboard widget and KPI. |
+| 6 | Urgent flag | Done | Team Lead, Manager and Admin set task priority, Urgent included (create, edit and the quick priority control); each change is in the activity log and an urgent task notifies its assignee. Only Manager and Admin mark a project urgent or set project deadlines. Urgent tasks and projects appear in a dashboard widget and KPI. |
 | 6 | Marketing handoff | Done | Marketing hands a project to the dev team with notes; Team Leads are notified and acknowledge the pickup. |
 | 6 | Role dashboards | Done | KPIs and widgets are chosen per role (see the role matrix in `WORKFLOW_GUIDE.md`). |
+| 7 | My work per project | Done | The project page shows a **My work** panel with tabs **Assigned tasks** (open tasks assigned to you in that project, overdue and urgent first and marked, status and priority badges, a **Start** button for Backlog/Ready tasks, plus reviews waiting on you and client follow-ups you own there) and **My to-dos**. The tabs work with mouse and keyboard (arrow keys, Home, End). The sidebar **My work** page keeps all projects, shows the project on every task and has a project filter (`?project=`). Both use `App\Services\MyWork`. Each task is listed in one group only. No migration. |
 | 7 | Soft delete, Trash and deletion history | Done | Administrators only. Projects, clients, tasks and users have a **Delete** button that asks for a reason (at least 5 characters). The record gets `deleted_at`, `deleted_by` and `deletion_reason` and is hidden from lists, dashboards, reports, search and reminders; its pages return 404. Delete and restore are written to the audit log (who, when, reason, restore note) and shown in the record's history. **Trash** (Administration menu) lists deleted records per type with who deleted them, when (IST) and why, and restores them with an optional note. There is no permanent delete. Deleting a project hides its tasks, milestones and other records, and restoring brings them back. A client with projects cannot be deleted. Admins cannot delete themselves or the last active administrator. A deleted user cannot sign in, their sessions are rejected, and their name shows as "Deleted user (Name)". Projects and clients now record `created_by`, shown as "Created by" (older records fall back to the first activity-log entry, otherwise it is hidden). Migration: `2026_10_30_130000_add_deletion_history_columns`. |
 
 ## Deferred, not built
@@ -56,12 +57,12 @@ These are not built. No link or button anywhere points to them.
 ## Not verified
 
 - **MySQL 8 itself:** the full test suite (migrations included) passes on SQLite and on MariaDB 11.4 in strict mode with ONLY_FULL_GROUP_BY. The five new migrations were also run, rolled back (`--step=5`) and re-run on SQLite and MariaDB. The soft delete migration was run, rolled back and re-run twice on both. They have not been run against MySQL 8, so run the migrations on a staging MySQL database before production.
-- **Browser review:** the login page, the dashboard for every role, the project page (client documents, to-dos, manager review), the review queue, the client page, the activity log, the user role form, the delete dialog and the Trash page were checked in headless Chrome with a production Vite build and demo data. Other screens are covered only by the rendering tests.
+- **Browser review:** the login page, the dashboard for every role, the project page (client documents, to-dos, manager review), the review queue, the client page, the activity log, the user role form, the delete dialog, the Trash page, the project My work panel and the My work page were checked in headless Chrome with a production Vite build and demo data. Other screens are covered only by the rendering tests.
 
 ## Known limitations
 
 - Sign-in is limited to 5 attempts per minute per email address and IP. After that, the form shows "Too many sign-in attempts" until the minute is up.
-- Only Manager and Admin can mark work **urgent**. A Team Lead sets the other priorities.
+- Only Manager and Admin can mark a **project** urgent or change its deadlines. Team Leads set task priority, Urgent included.
 - To-dos are private to their owner. An administrator cannot see another user's to-dos.
 - Deleting a client document hides it (soft delete). The file stays on the private disk.
 - A cloud link opens only for people the cloud service lets in. Check the sharing settings in Drive, OneDrive or Dropbox. The app stores the link, not a copy of the file.

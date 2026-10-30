@@ -12,6 +12,7 @@ use App\Models\Client;
 use App\Models\ClientDocument;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\MyWork;
 use App\Services\ProjectHealth;
 use App\Services\ProjectWorkflow;
 use App\Support\Activity;
@@ -107,8 +108,23 @@ class ProjectController extends Controller
                 ->when(! $request->user()->can('view-financials'), fn ($q) => $q->where('category', '!=', FileCategory::Quotation))
                 ->latest()->limit(6)->get(),
             'myTodos' => $request->user()->todos()->where('project_id', $project->id)->ordered()->limit(20)->get(),
+            'myWork' => $this->myWork($request->user(), $project),
             'reviewRequests' => $project->reviewRequests()->with(['requester:id,name', 'decider:id,name'])->latest()->limit(5)->get(),
         ]);
+    }
+
+    /**
+     * The signed-in user's work in this project (same rules as the My work page). The panel opens on "My to-dos"
+     * for people who are not given tasks (Marketing, Management) when they have no work here.
+     */
+    private function myWork(User $user, Project $project): array
+    {
+        $work = MyWork::for($user, $project->id);
+        $data = ['tasks' => $work->tasks(), 'reviews' => $work->reviewQueue(), 'followUps' => $work->followUps()];
+        $hasWork = collect($data)->contains(fn ($c) => $c->isNotEmpty());
+        $data['tab'] = ! $hasWork && ! $user->hasAbility('work-tasks') ? 'todos' : 'tasks';
+
+        return $data;
     }
 
     public function edit(Project $project): View

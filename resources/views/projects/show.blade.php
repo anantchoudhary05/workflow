@@ -65,7 +65,7 @@
                 </ul>
             </x-card>
 
-            @include('partials.todo-panel', ['todos' => $myTodos, 'project' => $project])
+            @include('projects.partials.my-work-panel', ['todos' => $myTodos, 'myWork' => $myWork])
 
             <x-card title="Milestones" :padded="false">
                 <x-slot:actions><a href="{{ route('projects.milestones', $project) }}" class="link">Manage</a></x-slot:actions>

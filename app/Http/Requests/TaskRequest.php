@@ -52,7 +52,7 @@ class TaskRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:10000'],
             'assignee_id' => ['nullable', 'exists:users,id,deleted_at,NULL'],
             'reviewer_id' => ['nullable', 'exists:users,id,deleted_at,NULL', 'different:assignee_id'],
-            'priority' => ['required', Rule::enum(Priority::class), $this->urgentPriorityRule($this->route('task')?->priority)],
+            'priority' => ['required', Rule::enum(Priority::class), $this->urgentPriorityRule($this->route('task')?->priority, 'set-task-priority')],
             'start_date' => ['nullable', 'date'],
             'due_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'estimated_hours' => ['nullable', 'numeric', 'min:0', 'max:9999'],

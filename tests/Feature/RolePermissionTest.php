@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\Priority;
 use App\Enums\Role;
+use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\Project;
 use App\Models\Task;
@@ -91,18 +92,49 @@ class RolePermissionTest extends TestCase
         $this->actingAs($marketing)->get(route('tasks.create'))->assertForbidden();
     }
 
-    public function test_only_set_urgency_holders_mark_tasks_urgent(): void
+    public function test_team_lead_sets_task_priority_including_urgent(): void
+    {
+        $lead = User::factory()->teamLead()->create();
+        $developer = User::factory()->create();
+        $task = Task::factory()->create(['priority' => Priority::Medium, 'assignee_id' => $developer->id]);
+
+        // Create / assign form: the priority select is shown and Urgent is accepted.
+        $this->actingAs($lead)->get(route('tasks.create', ['project' => $task->project_id]))->assertOk()
+            ->assertSee('name="priority"', false)->assertSee('value="urgent"', false);
+        $this->actingAs($lead)->post(route('tasks.store'), [
+            'project_id' => $task->project_id, 'title' => 'Hotfix checkout', 'priority' => 'urgent', 'assignee_id' => $developer->id,
+        ])->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertSame(Priority::Urgent, Task::where('title', 'Hotfix checkout')->firstOrFail()->priority);
+
+        // Edit form.
+        $this->actingAs($lead)->put(route('tasks.update', $task), [
+            'title' => $task->title, 'priority' => 'high', 'assignee_id' => $developer->id,
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(Priority::High, $task->fresh()->priority);
+
+        // Quick "Set priority" on the task page, logged and the assignee notified.
+        $this->actingAs($lead)->get(route('tasks.show', $task))->assertOk()->assertSee(route('tasks.priority', $task), false);
+        $this->actingAs($lead)->post(route('tasks.priority', $task), ['priority' => 'urgent'])->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertSame(Priority::Urgent, $task->fresh()->priority);
+        $log = ActivityLog::where('event', 'task.priority')->latest('id')->firstOrFail();
+        $this->assertSame($lead->id, $log->user_id);
+        $this->assertTrue($developer->notifications()->get()->contains(fn ($n) => $n->data['title'] === 'Urgent: '.$task->title));
+
+        $this->actingAs($lead)->post(route('tasks.priority', $task), ['priority' => 'low'])->assertRedirect();
+        $this->assertSame(Priority::Low, $task->fresh()->priority);
+    }
+
+    public function test_project_urgency_stays_with_managers(): void
     {
         $lead = User::factory()->teamLead()->create();
         $manager = User::factory()->manager()->create();
-        $task = Task::factory()->create(['priority' => Priority::Medium]);
+        $project = Task::factory()->create()->project;
 
-        $this->actingAs($lead)->post(route('tasks.store'), [
-            'project_id' => $task->project_id, 'title' => 'Hotfix', 'priority' => 'urgent',
-        ])->assertSessionHasErrors('priority');
-        $this->actingAs($lead)->post(route('tasks.priority', $task), ['priority' => 'urgent'])->assertForbidden();
-        $this->assertSame(Priority::Medium, $task->fresh()->priority);
+        $this->assertFalse($lead->can('set-urgency'));
+        $this->assertTrue($manager->can('set-urgency'));
+        $this->assertTrue($manager->can('set-task-priority'));
 
+        $task = Task::factory()->create(['project_id' => $project->id, 'priority' => Priority::Medium]);
         $this->actingAs($manager)->post(route('tasks.priority', $task), ['priority' => 'urgent'])->assertRedirect();
         $this->assertSame(Priority::Urgent, $task->fresh()->priority);
     }
@@ -114,6 +146,9 @@ class RolePermissionTest extends TestCase
         $task->project->members()->attach($developer);
 
         $this->actingAs($developer)->post(route('tasks.priority', $task), ['priority' => 'low'])->assertForbidden();
+        $this->actingAs($developer)->post(route('tasks.priority', $task), ['priority' => 'urgent'])->assertForbidden();
+        $this->actingAs($developer)->get(route('tasks.show', $task))->assertOk()->assertDontSee(route('tasks.priority', $task), false);
+        $this->assertNotSame(Priority::Urgent, $task->fresh()->priority);
     }
 
     public function test_admin_assigns_department_roles_on_users_page(): void
