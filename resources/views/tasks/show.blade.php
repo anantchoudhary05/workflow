@@ -12,7 +12,15 @@
             @can('changeStatus', $task)
                 @if ($transitions)<button type="button" class="btn btn-primary" data-dialog-open="task-status">Move task</button>@endif
             @endcan
+            @can('setPriority', $task)
+                <form method="POST" action="{{ route('tasks.priority', $task) }}" class="flex items-center gap-1">
+                    @csrf
+                    <x-field name="priority" type="select" :options="App\Enums\Priority::options()" :value="$task->priority" aria-label="Priority" />
+                    <button class="btn" title="Managers set priority and urgency"><x-icon name="flag" :size="16" /> Set priority</button>
+                </form>
+            @endcan
             @can('update', $task)<a href="{{ route('tasks.edit', $task) }}" class="btn"><x-icon name="edit" :size="16" /> Edit</a>@endcan
+            @include('partials.delete-record', ['id' => 'delete-task', 'action' => route('tasks.destroy', $task), 'label' => 'task '.$task->code])
         </x-slot:actions>
     </x-page-header>
 

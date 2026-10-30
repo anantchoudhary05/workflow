@@ -68,7 +68,7 @@ class RequirementController extends Controller
     /** Status/decision changes. Rejections and deferrals keep their rationale (Rule 15). */
     public function decide(Request $request, Requirement $requirement): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('project-ability', [$requirement->project, 'decide-requirements']);
         $this->authorize('view', $requirement->project);
         $data = $request->validate([
             'status' => ['required', Rule::enum(RequirementStatus::class)],

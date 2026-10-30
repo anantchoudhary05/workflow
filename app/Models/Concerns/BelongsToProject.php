@@ -3,12 +3,25 @@
 namespace App\Models\Concerns;
 
 use App\Models\Project;
+use App\Models\Scopes\ActiveParentScope;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 trait BelongsToProject
 {
+    /**
+     * Records of a soft-deleted project (or, for client-level records, a soft-deleted client) are hidden
+     * everywhere and reappear when the project or client is restored.
+     */
+    public static function bootBelongsToProject(): void
+    {
+        static::addGlobalScope('active-project', new ActiveParentScope('project_id', 'projects'));
+        if (defined(static::class.'::SCOPED_TO_CLIENT')) {
+            static::addGlobalScope('active-client', new ActiveParentScope('client_id', 'clients'));
+        }
+    }
+
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class)->withTrashed();
@@ -25,15 +38,9 @@ trait BelongsToProject
     /** Next sequential code within a project, e.g. REQ-007. */
     public static function nextCode(int $projectId, string $prefix): string
     {
-        $count = static::withTrashedIfAvailable()->where('project_id', $projectId)->count();
+        // Count every record ever created in the project (trashed or hidden too) so codes are never reused.
+        $count = static::query()->withoutGlobalScopes()->where('project_id', $projectId)->count();
 
         return sprintf('%s-%03d', $prefix, $count + 1);
-    }
-
-    protected static function withTrashedIfAvailable(): Builder
-    {
-        $query = static::query();
-
-        return method_exists(static::class, 'bootSoftDeletes') ? $query->withTrashed() : $query;
     }
 }

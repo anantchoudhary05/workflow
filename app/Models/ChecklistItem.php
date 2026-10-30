@@ -21,12 +21,12 @@ class ChecklistItem extends Model
 
     public function responsible(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'responsible_id');
+        return $this->belongsTo(User::class, 'responsible_id')->withTrashed();
     }
 
     public function completer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'completed_by');
+        return $this->belongsTo(User::class, 'completed_by')->withTrashed();
     }
 
     public function isSatisfied(): bool

@@ -25,7 +25,7 @@
                 <x-field name="source" label="Source" placeholder="Email, call, meeting…" />
                 <x-field name="received_at" type="date" label="Received" :value="today()" required />
                 <x-field name="priority" type="select" label="Priority" :options="$priorities" :value="App\Enums\Priority::Medium" required />
-                @can('manage')
+                @can('assess-change-requests')
                     <x-field name="classification" type="select" label="Classification" :options="$classifications" blank="Classify later" />
                     <x-field name="reviewer_id" type="select" label="Reviewer" :options="$users" blank="Unassigned" />
                     <x-field name="classification_rationale" type="textarea" label="Classification rationale" hint="Required when a classification is chosen." class="sm:col-span-2" />

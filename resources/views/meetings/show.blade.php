@@ -22,7 +22,7 @@
                             @if ($decision->task)
                                 <a class="link inline-flex items-center gap-1 text-sm" href="{{ route('tasks.show', $decision->task) }}">Task <x-badge :enum="$decision->task->status" /></a>
                             @elseif ($meeting->project_id)
-                                @can('manage')<form method="POST" action="{{ route('meetings.decisions.task', $decision) }}">@csrf<button class="btn btn-sm">Create task</button></form>@endcan
+                                @can('manage-tasks')<form method="POST" action="{{ route('meetings.decisions.task', $decision) }}">@csrf<button class="btn btn-sm">Create task</button></form>@endcan
                             @endif
                         </li>
                     @empty

@@ -103,7 +103,7 @@ class QaController extends Controller
             'steps' => ['nullable', 'string', 'max:10000'],
             'expected_behavior' => ['nullable', 'string', 'max:5000'],
             'actual_behavior' => ['nullable', 'string', 'max:5000'],
-            'assignee_id' => ['nullable', 'exists:users,id'],
+            'assignee_id' => ['nullable', 'exists:users,id,deleted_at,NULL'],
         ]);
         $defect = new Defect($data);
         $defect->project_id = $project->id;
@@ -144,7 +144,7 @@ class QaController extends Controller
         $data = $request->validate([
             'status' => ['required', Rule::enum(DefectStatus::class)],
             'resolution_notes' => [Rule::requiredIf(in_array($request->input('status'), ['wont_fix', 'reopened'], true)), 'nullable', 'string', 'max:5000'],
-            'assignee_id' => ['nullable', 'exists:users,id'],
+            'assignee_id' => ['nullable', 'exists:users,id,deleted_at,NULL'],
         ]);
         $to = DefectStatus::from($data['status']);
         $user = $request->user();

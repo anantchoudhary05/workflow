@@ -35,7 +35,7 @@ class ChecklistController extends Controller
 
     public function generate(Project $project, string $type): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('project-ability', [$project, 'manage-release']);
         if ($project->checklistItems()->where('type', $type)->exists()) {
             return back()->withErrors(['workflow' => 'This checklist already exists.']);
         }
@@ -53,7 +53,7 @@ class ChecklistController extends Controller
 
     public function store(Request $request, Project $project, string $type): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('project-ability', [$project, 'manage-release']);
         $data = $request->validate(['label' => ['required', 'string', 'max:255'], 'is_mandatory' => ['boolean']]);
         $item = new ChecklistItem($data + ['type' => $type, 'is_mandatory' => $request->boolean('is_mandatory'), 'sort_order' => (int) $project->checklistItems()->where('type', $type)->max('sort_order') + 1]);
         $item->project_id = $project->id;
@@ -69,7 +69,7 @@ class ChecklistController extends Controller
         $data = $request->validate([
             'status' => ['required', Rule::in(['pending', 'done', 'not_applicable'])],
             'evidence' => ['nullable', 'string', 'max:255'],
-            'responsible_id' => ['nullable', 'exists:users,id'],
+            'responsible_id' => ['nullable', 'exists:users,id,deleted_at,NULL'],
         ]);
         if ($data['status'] === 'not_applicable' && $item->is_mandatory) {
             return back()->withErrors(['workflow' => 'Mandatory items cannot be marked not applicable.']);
@@ -92,7 +92,7 @@ class ChecklistController extends Controller
     private function canEdit(Project $project, string $type): bool
     {
         $user = auth()->user();
-        if ($user->can('manage')) {
+        if ($user->can('project-ability', [$project, 'manage-release'])) {
             return true;
         }
 

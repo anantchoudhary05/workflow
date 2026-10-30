@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\ClientStatus;
+use App\Models\Client;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,7 +11,9 @@ class ClientRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('manage');
+        $client = $this->route('client');
+
+        return $client ? $this->user()->can('update', $client) : $this->user()->can('create', Client::class);
     }
 
     public function rules(): array
@@ -25,7 +28,7 @@ class ClientRequest extends FormRequest
             'billing_address' => ['nullable', 'string', 'max:2000'],
             'source' => ['nullable', 'string', 'max:30'],
             'status' => ['required', Rule::enum(ClientStatus::class)],
-            'owner_id' => ['nullable', 'exists:users,id'],
+            'owner_id' => ['nullable', 'exists:users,id,deleted_at,NULL'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ];
     }

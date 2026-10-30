@@ -2,15 +2,88 @@
 
 ## Roles
 
-| Role | Can do |
-|---|---|
-| Administrator | Everything, including the rule overrides. Every override requires a written reason and is recorded in the audit log. |
-| Management | Read-only view of all projects, clients, financials, reports, team and activity. |
-| Developer | Works on the projects they are a member of: tasks, time logging, communications, change-request logging, previews and files. |
-| Reviewer | Everything a Developer can do, plus task review, QA (test cases and defects) and the release checklist. |
+| Role | Who | Can do |
+|---|---|---|
+| Administrator | System owner | Everything, including user and role management and the rule overrides. Every override requires a written reason and is recorded in the audit log. |
+| Manager | Delivery / project manager | Reviews every project, sets deadlines, priority and **urgency**, decides requirements and change requests, manages clients and quotations, records client approvals, closes projects and marks Team Lead work **Ready for preview** or **Needs corrections**. |
+| Team Lead | Head of the dev team | Splits work into tasks and milestones and assigns the team, works own tasks, reviews tasks, runs QA and the release, uploads client documents, picks up Marketing handoffs and requests a manager review. Cannot mark work urgent or approve for client preview. |
+| Developer | Developer / designer | Works assigned tasks on member projects, logs time, records client communication, previews and files. |
+| QA / Reviewer | Tester | Everything a Developer can do, plus task review, QA (test cases and defects) and the release checklist. |
+| Marketing | Client onboarding | Onboards clients, creates projects, captures requirements, quotations and client approvals, records communication, uploads client documents and hands projects to the dev team. Does not create or assign tasks. |
+| Management | Directors / HR | Read-only view of all projects, clients, financials, team, reports and the activity log. |
 
-- Accounts are created by an administrator on **Users**, or with `php artisan doc:make-admin`.
+### Role matrix
+
+✓ = allowed. "Member" = only on projects the user is a member of.
+
+| Capability | Admin | Manager | Team Lead | Developer | QA | Marketing | Management |
+|---|---|---|---|---|---|---|---|
+| See all projects | ✓ | ✓ | ✓ | Member | Member | ✓ | ✓ (read-only) |
+| Create projects | ✓ | ✓ | – | – | – | ✓ | – |
+| Edit projects, members, status | ✓ | ✓ | ✓ | – | – | – | – |
+| Set deadlines and mark work urgent | ✓ | ✓ | – | – | – | – | – |
+| Create / assign tasks, milestones | ✓ | ✓ | ✓ | – | – | – | – |
+| Work own tasks, log time | ✓ | ✓ | ✓ | ✓ | ✓ | – | – |
+| Review tasks, QA, release checklist | ✓ | ✓ | ✓ | – | ✓ | – | – |
+| Requirements (capture) | ✓ | ✓ | ✓ | – | – | ✓ | – |
+| Requirements and change requests (decide) | ✓ | ✓ | – | – | – | – | – |
+| Clients, quotations, client approvals | ✓ | ✓ | – | – | – | ✓ | – |
+| Upload client documents or add cloud links | ✓ | ✓ | ✓ | – | – | ✓ | – |
+| View / download client documents | ✓ | ✓ | ✓ | Member | Member | ✓ | ✓ |
+| Request manager review | ✓ | ✓ | ✓ | – | – | – | – |
+| Mark Ready for preview / Needs corrections | ✓ | ✓ | – | – | – | – | – |
+| Hand a project to the dev team | ✓ | – | – | – | – | ✓ | – |
+| Acknowledge a handoff | ✓ | ✓ | ✓ | – | – | – | – |
+| Log client communication / feedback | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | – |
+| Financials (quotation values, reports) | ✓ | ✓ | – | – | – | ✓ | ✓ |
+| Team, reports, activity log | ✓ | ✓ | ✓ | – | – | – | ✓ |
+| Private to-dos | Own | Own | Own | Own | Own | Own | Own |
+| Users and roles | ✓ | – | – | – | – | – | – |
+| Delete and restore projects, clients, tasks, users (Trash) | ✓ | – | – | – | – | – | – |
+
+### Dashboards
+
+Every dashboard shows **My to-dos** and the user's role. The rest depends on the role:
+
+- **Administrator:** everything below.
+- **Manager:** review queue, urgent work, at-risk projects, pipeline, team load, approvals and client waits.
+- **Team Lead:** new handoffs from Marketing, unassigned tasks, urgent work, own review requests, own tasks, blocked work.
+- **Developer / QA:** own open, due-today and overdue tasks, urgent work assigned to them.
+- **Marketing:** pipeline, clients, handoffs sent to the dev team and whether they were picked up, recent client documents.
+- **Management:** portfolio KPIs, team load and recent activity (read-only).
+
+### Client documents
+
+On the client page (and in the client documents section of each of that client's projects), **Add document** gives two choices:
+
+- **Upload file:** choose a file from your computer. The title is the file name.
+- **Add link:** paste a Google Drive, OneDrive, Dropbox or other cloud link (it must start with `http://` or `https://`) and give it a title.
+
+Category and description work the same way for both. Link documents show a link icon and the site name (for example `drive.google.com`) and open in a new tab. Make sure the cloud file is shared with the team. Who can add, view and delete documents is the same for links and files.
+
+### Private to-dos
+
+Anyone can keep a personal to-do list on the dashboard, on a project page (linked to that project) or under **My to-dos**. To-dos are visible only to their owner, administrators included, and are not written to the activity log.
+
+### Accounts
+
+- Accounts are created by an administrator on **Users**, or with `php artisan doc:make-admin`. The role is chosen on the user form, which describes each role.
+- Existing users keep their role after the update (admin, developer, reviewer → QA / Reviewer, management). Nobody is promoted automatically.
 - A deactivated user is signed out on their next request.
+- A deleted user cannot sign in and is signed out. Their email cannot be reused for a new account; restore the old account from **Trash** instead.
+
+### Deleting and restoring (administrators)
+
+- **Delete** (red button) is on the project overview, the client page, the task page, and the Users list and user form. Only administrators see it, and the server refuses everyone else.
+- The dialog asks **why** the record is being deleted (at least 5 characters). The reason, who deleted it and when are saved and shown in the record's history and in the activity log.
+- Deleting hides the record from lists, dashboards, reports, search and reminders. Nothing is erased.
+- Deleting a **project** also hides its tasks, milestones, requirements, files and the rest; restoring the project brings them back.
+- A **client** with projects cannot be deleted. Delete its projects first, or archive the client.
+- You cannot delete your own account or the last active administrator.
+- **Trash** (Administration menu) has tabs for Projects, Clients, Tasks and Users. Each row shows who deleted it, when (IST) and why. **Restore** takes an optional note, which is logged.
+- Restore order: a client before its projects, a project before its tasks.
+- There is no permanent delete.
+- Project and client pages show **Created by**. Records created before this update use the first activity-log entry, or show nothing if there is none.
 
 ## Project lifecycle
 

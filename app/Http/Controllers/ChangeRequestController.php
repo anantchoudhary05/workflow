@@ -51,8 +51,8 @@ class ChangeRequestController extends Controller
     {
         $this->authorize('view', $project);
         $data = $request->validated();
-        // Contributors may log a request; only administrators classify and estimate it.
-        if (! $request->user()->can('manage')) {
+        // Contributors may log a request; only Team Leads, Managers and administrators classify and estimate it.
+        if (! $request->user()->can('assess-change-requests')) {
             $data = collect($data)->only(['title', 'description', 'reason', 'source', 'received_at', 'requested_by', 'priority'])->all();
         }
         $cr = DB::transaction(function () use ($data, $project, $request) {
@@ -114,7 +114,7 @@ class ChangeRequestController extends Controller
 
     public function status(Request $request, ChangeRequest $changeRequest, ChangeRequestWorkflow $workflow): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('project-ability', [$changeRequest->project, 'decide-change-requests']);
         $data = $request->validate([
             'status' => ['required', Rule::enum(ChangeRequestStatus::class)],
             'reason' => ['nullable', 'string', 'max:5000'],
@@ -128,7 +128,7 @@ class ChangeRequestController extends Controller
     /** Records the internal review (required before asking the client to approve). */
     public function internalReview(Request $request, ChangeRequest $changeRequest, ChangeRequestWorkflow $workflow): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('project-ability', [$changeRequest->project, 'decide-change-requests']);
         $data = $request->validate(['notes' => ['required', 'string', 'max:5000']]);
         $workflow->recordInternalReview($changeRequest, $request->user(), $data['notes']);
 
@@ -137,7 +137,7 @@ class ChangeRequestController extends Controller
 
     public function clientDecision(Request $request, ChangeRequest $changeRequest, ChangeRequestWorkflow $workflow): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('project-ability', [$changeRequest->project, 'record-client-approvals']);
         $data = $request->validate([
             'outcome' => ['required', Rule::in([ApprovalOutcome::Approved->value, ApprovalOutcome::ApprovedWithConditions->value, ApprovalOutcome::Rejected->value])],
             'decided_by_name' => ['required', 'string', 'max:255'],

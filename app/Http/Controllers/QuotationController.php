@@ -115,7 +115,7 @@ class QuotationController extends Controller
 
     public function send(Request $request, Quotation $quotation): RedirectResponse
     {
-        $this->authorize('update', $quotation);
+        $this->authorize('send', $quotation);
         $this->service->markSent($quotation, $request->user());
 
         return back()->with('status', 'Marked as sent. A client approval follow-up was created.');
@@ -123,7 +123,7 @@ class QuotationController extends Controller
 
     public function decide(Request $request, Quotation $quotation): RedirectResponse
     {
-        $this->authorize('update', $quotation);
+        $this->authorize('decide', $quotation);
         $data = $request->validate([
             'outcome' => ['required', Rule::in([ApprovalOutcome::Approved->value, ApprovalOutcome::ApprovedWithConditions->value, ApprovalOutcome::Rejected->value])],
             'decided_by_name' => ['required', 'string', 'max:255'],

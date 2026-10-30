@@ -40,7 +40,7 @@ class ApprovalController extends Controller
 
     public function milestone(Request $request, Milestone $milestone): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('project-ability', [$milestone->project, 'record-client-approvals']);
         $data = $request->validate([
             'outcome' => ['required', Rule::enum(ApprovalOutcome::class)],
             'decided_by_name' => ['required', 'string', 'max:255'],

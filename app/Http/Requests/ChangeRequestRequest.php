@@ -11,8 +11,12 @@ class ChangeRequestRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Logging a request is open to anyone who records client communication; assessment is admin-only.
-        return $this->isMethod('post') ? $this->user()->can('record-communication') : $this->user()->can('manage');
+        // Logging a request is open to anyone who records client communication; assessment is for Team Leads and Managers.
+        if ($this->isMethod('post')) {
+            return $this->user()->can('record-communication');
+        }
+
+        return $this->user()->can('project-ability', [$this->route('changeRequest')->project, 'assess-change-requests']);
     }
 
     public function rules(): array
@@ -26,7 +30,7 @@ class ChangeRequestRequest extends FormRequest
             'source' => ['nullable', 'string', 'max:40'],
             'received_at' => ['required', 'date'],
             'requested_by' => ['nullable', 'string', 'max:255'],
-            'reviewer_id' => ['nullable', 'exists:users,id'],
+            'reviewer_id' => ['nullable', 'exists:users,id,deleted_at,NULL'],
             'priority' => ['required', Rule::enum(Priority::class)],
             'classification' => ['nullable', Rule::enum(ChangeClassification::class)],
             'classification_rationale' => ['nullable', 'required_with:classification', 'string', 'max:5000'],

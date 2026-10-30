@@ -13,6 +13,9 @@ class ClientAction extends Model
 {
     use BelongsToProject;
 
+    /** Also hidden while its client is deleted. */
+    public const SCOPED_TO_CLIENT = true;
+
     public const STATUSES = ['waiting' => 'Waiting on client', 'received' => 'Received', 'cancelled' => 'Cancelled'];
 
     protected $fillable = ['client_id', 'project_id', 'type', 'title', 'requested_at', 'next_follow_up_at', 'owner_id'];
@@ -35,7 +38,7 @@ class ClientAction extends Model
 
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'owner_id');
+        return $this->belongsTo(User::class, 'owner_id')->withTrashed();
     }
 
     public function related(): MorphTo

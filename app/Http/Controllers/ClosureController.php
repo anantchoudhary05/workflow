@@ -19,7 +19,7 @@ class ClosureController extends Controller
 
     public function handover(Request $request, Project $project): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('project-ability', [$project, 'manage-release']);
         $data = $request->validate([
             'handover_status' => ['required', Rule::enum(HandoverStatus::class)],
             'reason' => ['nullable', 'string', 'max:2000'],
@@ -31,7 +31,7 @@ class ClosureController extends Controller
 
     public function acceptance(Request $request, Project $project): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('project-ability', [$project, 'record-client-approvals']);
         $data = $request->validate([
             'outcome' => ['required', Rule::in([ApprovalOutcome::Approved->value, ApprovalOutcome::ApprovedWithConditions->value, ApprovalOutcome::Rejected->value])],
             'decided_by_name' => ['required', 'string', 'max:255'],
@@ -50,7 +50,7 @@ class ClosureController extends Controller
 
     public function close(Request $request, Project $project): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('project-ability', [$project, 'close-projects']);
         $data = $request->validate([
             'closure_notes' => ['nullable', 'string', 'max:5000'],
             'override' => ['nullable', 'boolean'],
@@ -63,7 +63,7 @@ class ClosureController extends Controller
 
     public function reopen(Request $request, Project $project): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('manage'); // administrator override
         $data = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
         $this->workflow->reopen($project, $request->user(), $data['reason']);
 

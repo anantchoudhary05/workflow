@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Enums\ClientStatus;
 use App\Http\Requests\ClientRequest;
+use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\ClientContact;
+use App\Models\ClientDocument;
 use App\Support\Activity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -59,6 +61,11 @@ class ClientController extends Controller
             'actions' => $client->clientActions()->visibleTo($user)->with('project:id,code')->latest('requested_at')->limit(15)->get(),
             'meetings' => $client->meetings()->visibleTo($user)->latest('starts_at')->limit(10)->get(),
             'quotations' => $user->can('view-financials') ? $client->quotations()->visibleTo($user)->latest()->limit(10)->get() : collect(),
+            'documents' => $client->documents()->with('uploader:id,name')->latest()->get(),
+            'canUploadDocuments' => $user->can('create', [ClientDocument::class, $client]),
+            'createdBy' => $client->creatorName(),
+            'history' => ActivityLog::query()->with('user')->where('subject_type', $client->getMorphClass())
+                ->where('subject_id', $client->id)->latest('id')->limit(15)->get(),
         ]);
     }
 

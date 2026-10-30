@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\FileCategory;
 use App\Enums\Priority;
 use App\Enums\ProjectStatus;
 use App\Enums\ProjectType;
 use App\Http\Requests\ProjectRequest;
 use App\Models\ActivityLog;
 use App\Models\Client;
+use App\Models\ClientDocument;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\ProjectHealth;
@@ -87,7 +89,7 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
         $project = ProjectHealth::withData(Project::whereKey($project->id))->firstOrFail();
-        $project->load(['client:id,name', 'manager:id,name', 'members', 'approvedScope', 'statusHistory.user:id,name', 'dateChanges.user:id,name', 'closer:id,name']);
+        $project->load(['client:id,name', 'manager:id,name', 'members', 'approvedScope', 'statusHistory.user:id,name', 'dateChanges.user:id,name', 'closer:id,name', 'handedOffBy:id,name', 'handoffAcknowledgedBy:id,name']);
 
         return view('projects.show', [
             'project' => $project,
@@ -99,6 +101,13 @@ class ProjectController extends Controller
             'activity' => $project->activities()->with('user:id,name')->limit(12)->get(),
             'users' => $this->userOptions(),
             'statusOptions' => $workflow->availableStatuses($project, $request->user()),
+            'clientDocuments' => ClientDocument::query()->where('client_id', $project->client_id)->with('uploader:id,name')->latest()->get(),
+            'canUploadClientDocs' => $project->client && $request->user()->can('create', [ClientDocument::class, $project->client]),
+            'projectFiles' => $project->files()->with('uploader:id,name')
+                ->when(! $request->user()->can('view-financials'), fn ($q) => $q->where('category', '!=', FileCategory::Quotation))
+                ->latest()->limit(6)->get(),
+            'myTodos' => $request->user()->todos()->where('project_id', $project->id)->ordered()->limit(20)->get(),
+            'reviewRequests' => $project->reviewRequests()->with(['requester:id,name', 'decider:id,name'])->latest()->limit(5)->get(),
         ]);
     }
 
@@ -134,7 +143,7 @@ class ProjectController extends Controller
 
     public function dueDate(Request $request, Project $project, ProjectWorkflow $workflow): RedirectResponse
     {
-        $this->authorize('update', $project);
+        $this->authorize('project-ability', [$project, 'set-deadlines']);
         $data = $request->validate([
             'due_date' => ['nullable', 'date'],
             'reason' => ['required', 'string', 'max:2000'],
@@ -148,7 +157,7 @@ class ProjectController extends Controller
     public function addMember(Request $request, Project $project): RedirectResponse
     {
         $this->authorize('update', $project);
-        $data = $request->validate(['user_id' => ['required', 'exists:users,id'], 'role' => ['nullable', 'string', 'max:60']]);
+        $data = $request->validate(['user_id' => ['required', 'exists:users,id,deleted_at,NULL'], 'role' => ['nullable', 'string', 'max:60']]);
         $project->members()->syncWithoutDetaching([$data['user_id'] => ['role' => $data['role'] ?? null]]);
         Activity::log('project.member_added', 'Added '.User::find($data['user_id'])->name.' to the team', $project, [], true);
 

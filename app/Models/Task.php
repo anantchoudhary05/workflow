@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\Priority;
 use App\Enums\TaskStatus;
 use App\Models\Concerns\BelongsToProject;
+use App\Models\Concerns\RecordsDeletion;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Task extends Model
 {
-    use BelongsToProject, HasFactory, SoftDeletes;
+    use BelongsToProject, HasFactory, RecordsDeletion, SoftDeletes;
 
     // status, blocker_reason, completed_at are changed via TaskWorkflow only.
     protected $fillable = ['project_id', 'milestone_id', 'change_request_id', 'title', 'description', 'assignee_id', 'reviewer_id', 'priority', 'start_date', 'due_date', 'estimated_hours', 'tags', 'acceptance_criteria', 'internal_notes'];
@@ -49,17 +50,17 @@ class Task extends Model
 
     public function assignee(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'assignee_id');
+        return $this->belongsTo(User::class, 'assignee_id')->withTrashed();
     }
 
     public function reviewer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'reviewer_id');
+        return $this->belongsTo(User::class, 'reviewer_id')->withTrashed();
     }
 
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'creator_id');
+        return $this->belongsTo(User::class, 'creator_id')->withTrashed();
     }
 
     public function comments(): MorphMany

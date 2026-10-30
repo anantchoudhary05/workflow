@@ -5,7 +5,7 @@
         <select name="project" class="input w-56" data-autosubmit aria-label="Project"><option value="">All projects</option>@foreach ($projects as $id => $label)<option value="{{ $id }}" @selected(($filters['project'] ?? '') == $id)>{{ $label }}</option>@endforeach</select>
     @endempty
     <select name="assignee" class="input w-44" data-autosubmit aria-label="Assignee">
-        <option value="">Anyone</option><option value="me" @selected(($filters['assignee'] ?? '') === 'me')>Me</option>
+        <option value="">Anyone</option><option value="me" @selected(($filters['assignee'] ?? '') === 'me')>Me</option><option value="none" @selected(($filters['assignee'] ?? '') === 'none')>Unassigned</option>
         @foreach ($users as $id => $name)<option value="{{ $id }}" @selected(($filters['assignee'] ?? '') == $id)>{{ $name }}</option>@endforeach
     </select>
     @isset($statuses)

@@ -15,6 +15,9 @@ class Meeting extends Model
 {
     use BelongsToProject, SoftDeletes;
 
+    /** Also hidden while its client is deleted. */
+    public const SCOPED_TO_CLIENT = true;
+
     public const STATUSES = ['scheduled' => 'Scheduled', 'completed' => 'Completed', 'cancelled' => 'Cancelled'];
 
     protected $fillable = ['client_id', 'project_id', 'title', 'type', 'starts_at', 'duration_minutes', 'external_participants', 'agenda', 'notes', 'status', 'follow_up_date'];
@@ -31,7 +34,7 @@ class Meeting extends Model
 
     public function organizer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'organizer_id');
+        return $this->belongsTo(User::class, 'organizer_id')->withTrashed();
     }
 
     public function participants(): BelongsToMany

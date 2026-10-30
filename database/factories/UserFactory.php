@@ -46,6 +46,30 @@ class UserFactory extends Factory
     }
 
     /**
+     * Indicate that the user is a Manager.
+     */
+    public function manager(): static
+    {
+        return $this->state(fn (array $attributes) => ['role' => Role::Manager]);
+    }
+
+    /**
+     * Indicate that the user is a Team Lead.
+     */
+    public function teamLead(): static
+    {
+        return $this->state(fn (array $attributes) => ['role' => Role::TeamLead]);
+    }
+
+    /**
+     * Indicate that the user is in the Marketing team.
+     */
+    public function marketing(): static
+    {
+        return $this->state(fn (array $attributes) => ['role' => Role::Marketing]);
+    }
+
+    /**
      * Indicate that the user is a QA reviewer.
      */
     public function reviewer(): static

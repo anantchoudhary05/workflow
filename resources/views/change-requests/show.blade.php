@@ -15,14 +15,14 @@
             </p>
         </x-slot:meta>
         <x-slot:actions>
-            @can('manage')
-                @if ($cr->status === $S::AwaitingInternalReview && ! $cr->internal_reviewed_at)<button type="button" class="btn" data-dialog-open="cr-review">Record internal review</button>@endif
-                @if ($cr->status === $S::AwaitingClientApproval)<button type="button" class="btn btn-primary" data-dialog-open="cr-decision">Record client decision</button>@endif
-                @if ($statusTargets->isNotEmpty() || in_array($cr->status, [$S::Approved, $S::UnderAssessment, $S::AwaitingInternalReview], true))<button type="button" class="btn" data-dialog-open="cr-status">Change status</button>@endif
-                @if (in_array($cr->status, [$S::Approved, $S::Scheduled, $S::InProgress], true))
+            @canany(['assess-change-requests', 'decide-change-requests', 'record-client-approvals', 'manage-tasks'])
+                @if ($cr->status === $S::AwaitingInternalReview && ! $cr->internal_reviewed_at && auth()->user()->can('decide-change-requests'))<button type="button" class="btn" data-dialog-open="cr-review">Record internal review</button>@endif
+                @if ($cr->status === $S::AwaitingClientApproval && auth()->user()->can('record-client-approvals'))<button type="button" class="btn btn-primary" data-dialog-open="cr-decision">Record client decision</button>@endif
+                @if (auth()->user()->can('decide-change-requests') && ($statusTargets->isNotEmpty() || in_array($cr->status, [$S::Approved, $S::UnderAssessment, $S::AwaitingInternalReview], true)))<button type="button" class="btn" data-dialog-open="cr-status">Change status</button>@endif
+                @if (in_array($cr->status, [$S::Approved, $S::Scheduled, $S::InProgress], true) && auth()->user()->can('manage-tasks'))
                     <a class="btn" href="{{ route('tasks.create', ['project' => $cr->project_id, 'change_request' => $cr->id]) }}"><x-icon name="plus" :size="16" /> Task</a>
                 @endif
-            @endcan
+            @endcanany
         </x-slot:actions>
     </x-page-header>
 
@@ -52,7 +52,7 @@
                 @if ($cr->requirements->isNotEmpty())<p class="mt-1 text-sm"><span class="text-muted">Requirements:</span> {{ $cr->requirements->map(fn ($r) => $r->code)->implode(', ') }}</p>@endif
             </x-card>
 
-            @can('manage')
+            @can('assess-change-requests')
                 @if ($assessable)
                     <x-card title="Update assessment">
                         <form method="POST" action="{{ route('change-requests.update', $cr) }}" class="grid gap-4 sm:grid-cols-2">
@@ -119,7 +119,7 @@
         </div>
     </div>
 
-    @can('manage')
+    @canany(['decide-change-requests', 'record-client-approvals'])
         <x-dialog id="cr-status" title="Change status">
             <form method="POST" action="{{ route('change-requests.status', $cr) }}" class="flex flex-col gap-4">
                 @csrf
@@ -159,5 +159,5 @@
                 </form>
             </x-dialog>
         @endif
-    @endcan
+    @endcanany
 @endsection

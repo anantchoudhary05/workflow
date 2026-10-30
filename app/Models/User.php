@@ -4,18 +4,21 @@ namespace App\Models;
 
 use App\Enums\Role;
 use App\Enums\TaskStatus;
+use App\Models\Concerns\RecordsDeletion;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, RecordsDeletion, SoftDeletes;
 
     // role and is_active are deliberately NOT fillable: only admin actions set them explicitly.
     protected $fillable = ['name', 'email', 'password', 'job_title', 'skills', 'weekly_capacity_hours'];
@@ -32,6 +35,48 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'weekly_capacity_hours' => 'decimal:2',
         ];
+    }
+
+    /**
+     * A deleted user still appears on the records they worked on (tasks, comments, history) as "Deleted user (Name)".
+     * Deleted users cannot sign in: the soft-delete scope hides them from authentication and session lookups.
+     */
+    protected function name(): Attribute
+    {
+        return Attribute::get(fn (?string $value) => $this->isDeletedAccount() ? 'Deleted user ('.$value.')' : $value);
+    }
+
+    /**
+     * Works even when the user was loaded with a narrow select such as "assignee:id,name" (no deleted_at column):
+     * the ids of deleted users are looked up once per request.
+     */
+    public function isDeletedAccount(): bool
+    {
+        if (array_key_exists('deleted_at', $this->attributes)) {
+            return $this->attributes['deleted_at'] !== null;
+        }
+        if (! $this->getKey()) {
+            return false;
+        }
+        if (! app()->bound(self::TRASHED_IDS)) {
+            app()->instance(self::TRASHED_IDS, static::onlyTrashed()->pluck('id')->map(fn ($id) => (int) $id)->flip()->all());
+        }
+
+        return isset(app(self::TRASHED_IDS)[(int) $this->getKey()]);
+    }
+
+    /** Call after deleting or restoring a user so the request-level cache above is rebuilt. */
+    public static function forgetDeletedIds(): void
+    {
+        app()->forgetInstance(self::TRASHED_IDS);
+    }
+
+    private const TRASHED_IDS = 'users.trashed-ids';
+
+    /** The stored name without the "Deleted user" label (trash page, restore messages). */
+    public function realName(): string
+    {
+        return (string) $this->getRawOriginal('name', $this->attributes['name'] ?? '');
     }
 
     public function hasAbility(string $ability): bool
@@ -64,6 +109,12 @@ class User extends Authenticatable
     public function openTasks(): HasMany
     {
         return $this->assignedTasks()->whereIn('status', TaskStatus::open());
+    }
+
+    /** Personal to-dos: private to this user. */
+    public function todos(): HasMany
+    {
+        return $this->hasMany(Todo::class);
     }
 
     public function timeEntries(): HasMany

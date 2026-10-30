@@ -35,17 +35,17 @@ class ChangeRequest extends Model
 
     public function reviewer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'reviewer_id');
+        return $this->belongsTo(User::class, 'reviewer_id')->withTrashed();
     }
 
     public function internalReviewer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'internal_reviewed_by');
+        return $this->belongsTo(User::class, 'internal_reviewed_by')->withTrashed();
     }
 
     public function decider(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'decided_by');
+        return $this->belongsTo(User::class, 'decided_by')->withTrashed();
     }
 
     public function milestones(): BelongsToMany

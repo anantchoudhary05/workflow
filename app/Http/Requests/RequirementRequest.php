@@ -11,7 +11,10 @@ class RequirementRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('manage');
+        $projectId = $this->route('requirement')?->project_id ?? $this->route('project')?->id;
+
+        // Marketing captures requirements; Team Leads and Managers refine them.
+        return $this->user()->can('manage-requirements') && $this->user()->canAccessProject($projectId);
     }
 
     public function rules(): array
@@ -23,7 +26,7 @@ class RequirementRequest extends FormRequest
             'priority' => ['required', Rule::enum(Priority::class)],
             'acceptance_criteria' => ['nullable', 'string', 'max:5000'],
             'requested_by' => ['nullable', 'string', 'max:255'],
-            'owner_id' => ['nullable', 'exists:users,id'],
+            'owner_id' => ['nullable', 'exists:users,id,deleted_at,NULL'],
             'source' => ['nullable', 'string', 'max:60'],
             'module' => ['nullable', 'string', 'max:120'],
             'estimated_hours' => ['nullable', 'numeric', 'min:0', 'max:9999'],

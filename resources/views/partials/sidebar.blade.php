@@ -4,6 +4,7 @@
         null => [
             ['Dashboard', 'dashboard', 'dashboard', 'dashboard', true],
             ['My work', 'my-work', 'my-work', 'inbox', true],
+            ['My to-dos', 'todos.index', 'todos.*', 'list', true],
         ],
         'Delivery' => [
             ['Projects', 'projects.index', 'projects.*', 'folder', true],
@@ -11,6 +12,7 @@
             ['Task board', 'tasks.board', 'tasks.board', 'kanban', true],
             ['Change requests', 'change-requests.index', 'change-requests.*', 'git-pull-request', true],
             ['QA & defects', 'qa.index', ['qa.*', 'defects.*'], 'bug', true],
+            ['Review queue', 'reviews.index', 'reviews.*', 'eye', auth()->user()->can('approve-for-preview') || auth()->user()->can('request-review')],
             ['Approvals', 'approvals.index', 'approvals.*', 'badge-check', true],
         ],
         'Clients' => [
@@ -21,12 +23,13 @@
             ['Quotations', 'quotations.index', 'quotations.*', 'file-text', auth()->user()->can('viewAny', Quotation::class)],
         ],
         'Insights' => [
-            ['Team workload', 'team.index', 'team.*', 'users', auth()->user()->can('view-team')],
+            ['Team activity', 'team.index', 'team.*', 'users', auth()->user()->can('view-team')],
             ['Reports', 'reports.index', 'reports.*', 'chart', auth()->user()->can('view-reports')],
             ['Activity log', 'activity.index', 'activity.*', 'activity', auth()->user()->can('view-activity')],
         ],
         'Administration' => [
             ['Users', 'users.index', 'users.*', 'shield', auth()->user()->can('manage')],
+            ['Trash', 'trash.index', 'trash.*', 'trash', auth()->user()->can('delete-records')],
         ],
     ];
 @endphp

@@ -6,7 +6,7 @@
 
     <div class="mb-4 flex items-center justify-between gap-2">
         <p class="text-sm text-muted">Milestone weights drive project progress. Dependencies and approvals are enforced before completion.</p>
-        @can('manage')<button type="button" class="btn btn-primary" data-dialog-open="new-milestone"><x-icon name="plus" :size="16" /> Add milestone</button>@endcan
+        @can('manage-milestones')<button type="button" class="btn btn-primary" data-dialog-open="new-milestone"><x-icon name="plus" :size="16" /> Add milestone</button>@endcan
     </div>
 
     @if ($milestones->isEmpty())
@@ -37,13 +37,13 @@
                             @endif
                             @if ($milestone->override_reason)<p class="mt-1 text-xs text-warning">Override: {{ $milestone->override_reason }}</p>@endif
                         </div>
-                        @can('manage')
+                        @canany(['manage-milestones', 'record-client-approvals'])
                             <div class="flex flex-wrap gap-2">
-                                <button type="button" class="btn btn-sm" data-dialog-open="ms-status-{{ $milestone->id }}">Status</button>
-                                @if ($milestone->requires_approval)<button type="button" class="btn btn-sm" data-dialog-open="ms-approval-{{ $milestone->id }}">Record approval</button>@endif
-                                <button type="button" class="btn btn-sm" data-dialog-open="ms-edit-{{ $milestone->id }}"><x-icon name="edit" :size="14" /> Edit</button>
+                                @can('manage-milestones')<button type="button" class="btn btn-sm" data-dialog-open="ms-status-{{ $milestone->id }}">Status</button>@endcan
+                                @if ($milestone->requires_approval && auth()->user()->can('record-client-approvals'))<button type="button" class="btn btn-sm" data-dialog-open="ms-approval-{{ $milestone->id }}">Record approval</button>@endif
+                                @can('manage-milestones')<button type="button" class="btn btn-sm" data-dialog-open="ms-edit-{{ $milestone->id }}"><x-icon name="edit" :size="14" /> Edit</button>@endcan
                             </div>
-                        @endcan
+                        @endcanany
                     </div>
                     @if ($pct !== null)<div class="progress mt-3"><span style="width: {{ $pct }}%"></span></div>@endif
                 </x-card>
@@ -51,7 +51,7 @@
         </div>
     @endif
 
-    @can('manage')
+    @canany(['manage-milestones', 'record-client-approvals'])
         <x-dialog id="new-milestone" title="Add milestone">
             <form method="POST" action="{{ route('projects.milestones.store', $project) }}" class="grid gap-4 sm:grid-cols-2">
                 @csrf
@@ -95,5 +95,5 @@
                 </x-dialog>
             @endif
         @endforeach
-    @endcan
+    @endcanany
 @endsection

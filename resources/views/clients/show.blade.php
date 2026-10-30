@@ -7,6 +7,7 @@
                 <x-badge :enum="$client->status" /> <span>{{ $client->code }}</span>
                 @if ($client->company_name)<span>· {{ $client->company_name }}</span>@endif
                 @if ($client->owner)<span>· Owner {{ $client->owner->name }}</span>@endif
+                @if ($createdBy)<span data-created-by>· Created by {{ $createdBy }}</span>@endif
             </div>
         </x-slot:meta>
         <x-slot:actions>
@@ -19,11 +20,15 @@
             @can('create', App\Models\Project::class)
                 <a href="{{ route('projects.create', ['client' => $client->id]) }}" class="btn btn-primary"><x-icon name="plus" :size="16" /> New project</a>
             @endcan
+            @include('partials.delete-record', ['id' => 'delete-client', 'action' => route('clients.destroy', $client), 'label' => 'client '.$client->name,
+                'note' => $projects->isNotEmpty() ? 'This client still has projects. Delete or move them first; the delete will be refused until then.' : null])
         </x-slot:actions>
     </x-page-header>
 
     <div class="grid gap-6 xl:grid-cols-3">
         <div class="flex flex-col gap-6 xl:col-span-2">
+            @include('partials.client-documents', ['client' => $client, 'documents' => $documents, 'canUpload' => $canUploadDocuments])
+
             <x-card title="Projects" :padded="false">
                 @if ($projects->isEmpty())
                     <x-empty-state title="No projects yet" icon="folder" />
@@ -136,6 +141,14 @@
                     </ul>
                 </x-card>
             @endcan
+
+            <x-card title="History" data-client-history>
+                @if ($history->isEmpty())
+                    <p class="text-sm text-muted">No history yet.</p>
+                @else
+                    <ul class="divide-y divide-line">@include('partials.activity-list', ['logs' => $history])</ul>
+                @endif
+            </x-card>
         </div>
     </div>
 @endsection

@@ -4,11 +4,15 @@ namespace App\Http\Requests;
 
 use App\Enums\Priority;
 use App\Enums\TaskStatus;
+use App\Http\Requests\Concerns\GuardsUrgentPriority;
+use App\Models\Task;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class TaskRequest extends FormRequest
 {
+    use GuardsUrgentPriority;
+
     /**
      * Statuses a task may start in. Later statuses (review, done, …) are reached through the workflow.
      *
@@ -21,7 +25,15 @@ class TaskRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()->can('manage');
+        $user = $this->user();
+        $task = $this->route('task');
+        if ($task) {
+            return $user->can('update', $task);
+        }
+
+        // New tasks: Team Leads/Managers, and only on a project they can open.
+        return $user->can('create', Task::class)
+            && (! $this->filled('project_id') || $user->canAccessProject((int) $this->input('project_id')));
     }
 
     /**
@@ -38,9 +50,9 @@ class TaskRequest extends FormRequest
             'change_request_id' => ['nullable', Rule::exists('change_requests', 'id')->where('project_id', $projectId)],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:10000'],
-            'assignee_id' => ['nullable', 'exists:users,id'],
-            'reviewer_id' => ['nullable', 'exists:users,id', 'different:assignee_id'],
-            'priority' => ['required', Rule::enum(Priority::class)],
+            'assignee_id' => ['nullable', 'exists:users,id,deleted_at,NULL'],
+            'reviewer_id' => ['nullable', 'exists:users,id,deleted_at,NULL', 'different:assignee_id'],
+            'priority' => ['required', Rule::enum(Priority::class), $this->urgentPriorityRule($this->route('task')?->priority)],
             'start_date' => ['nullable', 'date'],
             'due_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'estimated_hours' => ['nullable', 'numeric', 'min:0', 'max:9999'],

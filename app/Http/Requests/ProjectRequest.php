@@ -5,14 +5,21 @@ namespace App\Http\Requests;
 use App\Enums\Priority;
 use App\Enums\ProjectStatus;
 use App\Enums\ProjectType;
+use App\Http\Requests\Concerns\GuardsUrgentPriority;
+use App\Models\Project;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class ProjectRequest extends FormRequest
 {
+    use GuardsUrgentPriority;
+
     public function authorize(): bool
     {
-        return $this->user()->can('manage');
+        $project = $this->route('project');
+
+        // Creating: Marketing/Managers. Editing: Managers/Team Leads with access to the project.
+        return $project ? $this->user()->can('update', $project) : $this->user()->can('create', Project::class);
     }
 
     /**
@@ -38,7 +45,7 @@ class ProjectRequest extends FormRequest
             'client_id' => ['required', 'exists:clients,id'],
             'type' => ['required', Rule::enum(ProjectType::class)],
             'description' => ['nullable', 'string', 'max:5000'],
-            'manager_id' => ['nullable', 'exists:users,id'],
+            'manager_id' => ['nullable', 'exists:users,id,deleted_at,NULL'],
             'start_date' => ['nullable', 'date'],
             // After creation the delivery date changes only via the recorded "change due date" action.
             'due_date' => $creating ? ['nullable', 'date', 'after_or_equal:start_date'] : ['prohibited'],
@@ -47,7 +54,7 @@ class ProjectRequest extends FormRequest
             'status' => $creating
                 ? ['nullable', Rule::in(array_map(fn (ProjectStatus $s): string => $s->value, ProjectStatus::initial()))]
                 : ['prohibited'],
-            'priority' => ['required', Rule::enum(Priority::class)],
+            'priority' => ['required', Rule::enum(Priority::class), $this->urgentPriorityRule($this->route('project')?->priority)],
             'estimated_hours' => ['nullable', 'numeric', 'min:0', 'max:99999'],
             'internal_notes' => ['nullable', 'string', 'max:5000'],
             'client_summary' => ['nullable', 'string', 'max:5000'],
@@ -55,7 +62,7 @@ class ProjectRequest extends FormRequest
             'staging_url' => ['nullable', 'url', 'max:255'],
             'production_url' => ['nullable', 'url', 'max:255'],
             'members' => ['array'],
-            'members.*' => ['integer', 'exists:users,id'],
+            'members.*' => ['integer', 'exists:users,id,deleted_at,NULL'],
         ];
     }
 }

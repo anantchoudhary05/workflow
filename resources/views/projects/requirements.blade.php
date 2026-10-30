@@ -52,7 +52,7 @@
                                         @unless ($locked)
                                             <button type="button" class="btn btn-sm" data-dialog-open="edit-req-{{ $requirement->id }}"><x-icon name="edit" :size="14" /> Edit</button>
                                         @endunless
-                                        @can('manage')
+                                        @can('decide-requirements')
                                             <button type="button" class="btn btn-sm" data-dialog-open="decide-req-{{ $requirement->id }}">Change status</button>
                                         @endcan
                                     </div>
@@ -84,7 +84,7 @@
                 </form>
             </x-dialog>
         @endunless
-        @can('manage')
+        @can('decide-requirements')
             <x-dialog :id="'decide-req-'.$requirement->id" :title="'Status of '.$requirement->code">
                 <form method="POST" action="{{ route('requirements.decide', $requirement) }}" class="flex flex-col gap-4">
                     @csrf

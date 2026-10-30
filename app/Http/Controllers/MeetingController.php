@@ -98,7 +98,7 @@ class MeetingController extends Controller
         $data = $request->validate([
             'decision' => ['required', 'string', 'max:5000'],
             'decided_by' => ['nullable', 'string', 'max:255'],
-            'owner_id' => ['nullable', 'exists:users,id'],
+            'owner_id' => ['nullable', 'exists:users,id,deleted_at,NULL'],
         ]);
         $decision = $meeting->decisions()->make($data);
         $decision->recorded_by = $request->user()->id;
@@ -108,12 +108,13 @@ class MeetingController extends Controller
         return back()->with('status', 'Decision recorded.');
     }
 
-    /** Turns a meeting decision into a tracked task (admin only, project meetings only). */
+    /** Turns a meeting decision into a tracked task (Team Leads and Managers, project meetings only). */
     public function decisionToTask(Request $request, MeetingDecision $decision): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('manage-tasks');
         $meeting = $decision->meeting;
         abort_unless($meeting->project_id, 422, 'Only project meetings can create tasks.');
+        abort_unless($request->user()->canAccessProject($meeting->project_id), 403);
         if ($decision->task_id) {
             return redirect()->route('tasks.show', $decision->task_id);
         }
@@ -152,7 +153,7 @@ class MeetingController extends Controller
             'status' => ['required', Rule::in(['scheduled', 'completed', 'cancelled'])],
             'follow_up_date' => ['nullable', 'date'],
             'participants' => ['array'],
-            'participants.*' => ['exists:users,id'],
+            'participants.*' => ['exists:users,id,deleted_at,NULL'],
         ]);
         $this->authorizeProjectAccess(isset($data['project_id']) ? (int) $data['project_id'] : null);
         if (! empty($data['project_id']) && empty($data['client_id'])) {

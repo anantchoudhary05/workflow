@@ -32,7 +32,7 @@ class TestCase extends Model
 
     public function tester(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'tester_id');
+        return $this->belongsTo(User::class, 'tester_id')->withTrashed();
     }
 
     public function defects(): HasMany

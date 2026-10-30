@@ -35,7 +35,7 @@
             </x-card>
         </div>
 
-        @can('manage')
+        @can('decide-requirements')
             <x-card title="Record client scope approval">
                 @if ($approvedRequirements->isEmpty())
                     <p class="text-muted">Approve at least one requirement first.</p>

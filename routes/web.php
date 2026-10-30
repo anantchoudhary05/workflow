@@ -16,6 +16,17 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::redirect('/', '/dashboard');
     Route::get('dashboard', Controllers\DashboardController::class)->name('dashboard');
     Route::get('my-work', Controllers\MyWorkController::class)->name('my-work');
+
+    // Personal to-dos (private to their owner).
+    Route::get('todos', [Controllers\TodoController::class, 'index'])->name('todos.index');
+    Route::post('todos', [Controllers\TodoController::class, 'store'])->name('todos.store');
+    Route::put('todos/{todo}', [Controllers\TodoController::class, 'update'])->name('todos.update');
+    Route::post('todos/{todo}/toggle', [Controllers\TodoController::class, 'toggle'])->name('todos.toggle');
+    Route::delete('todos/{todo}', [Controllers\TodoController::class, 'destroy'])->name('todos.destroy');
+
+    // Manager review queue.
+    Route::get('reviews', [Controllers\ReviewRequestController::class, 'index'])->name('reviews.index');
+    Route::post('review-requests/{reviewRequest}/decide', [Controllers\ReviewRequestController::class, 'decide'])->name('review-requests.decide');
     Route::get('search', Controllers\SearchController::class)->name('search');
 
     Route::get('notifications', [Controllers\NotificationController::class, 'index'])->name('notifications.index');
@@ -25,6 +36,10 @@ Route::middleware(['auth', 'active'])->group(function () {
     // Clients
     Route::resource('clients', Controllers\ClientController::class)->except('destroy');
     Route::post('clients/{client}/archive', [Controllers\ClientController::class, 'archive'])->name('clients.archive');
+    Route::post('clients/{client}/documents', [Controllers\ClientDocumentController::class, 'store'])->name('clients.documents.store');
+    Route::get('client-documents/{document}/download', [Controllers\ClientDocumentController::class, 'download'])->name('client-documents.download');
+    Route::get('client-documents/{document}/preview', [Controllers\ClientDocumentController::class, 'preview'])->name('client-documents.preview');
+    Route::delete('client-documents/{document}', [Controllers\ClientDocumentController::class, 'destroy'])->name('client-documents.destroy');
     Route::post('clients/{client}/contacts', [Controllers\ClientController::class, 'storeContact'])->name('clients.contacts.store');
     Route::delete('client-contacts/{contact}', [Controllers\ClientController::class, 'destroyContact'])->name('clients.contacts.destroy');
 
@@ -71,6 +86,10 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('acceptance', [Controllers\ClosureController::class, 'acceptance'])->name('acceptance');
         Route::post('close', [Controllers\ClosureController::class, 'close'])->name('close');
         Route::post('reopen', [Controllers\ClosureController::class, 'reopen'])->name('reopen');
+
+        Route::post('review-requests', [Controllers\ReviewRequestController::class, 'store'])->name('review-requests.store');
+        Route::post('handoff', [Controllers\HandoffController::class, 'store'])->name('handoff');
+        Route::post('handoff/acknowledge', [Controllers\HandoffController::class, 'acknowledge'])->name('handoff.acknowledge');
     });
 
     Route::patch('requirements/{requirement}', [Controllers\RequirementController::class, 'update'])->name('requirements.update');
@@ -91,6 +110,14 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::put('milestones/{milestone}', [Controllers\MilestoneController::class, 'update'])->name('milestones.update');
     Route::post('milestones/{milestone}/status', [Controllers\MilestoneController::class, 'status'])->name('milestones.status');
 
+    // Soft delete with a required reason, Trash and restore: administrators only (TrashController + policies).
+    Route::delete('projects/{project}', [Controllers\TrashController::class, 'destroyProject'])->name('projects.destroy');
+    Route::delete('clients/{client}', [Controllers\TrashController::class, 'destroyClient'])->name('clients.destroy');
+    Route::delete('tasks/{task}', [Controllers\TrashController::class, 'destroyTask'])->name('tasks.destroy');
+    Route::delete('users/{user}', [Controllers\TrashController::class, 'destroyUser'])->name('users.destroy');
+    Route::get('trash', [Controllers\TrashController::class, 'index'])->name('trash.index');
+    Route::post('trash/{type}/{id}/restore', [Controllers\TrashController::class, 'restore'])->whereNumber('id')->name('trash.restore');
+
     // Tasks
     Route::get('tasks', [Controllers\TaskController::class, 'index'])->name('tasks.index');
     Route::get('tasks/board', [Controllers\TaskController::class, 'board'])->name('tasks.board');
@@ -99,6 +126,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('tasks/{task}', [Controllers\TaskController::class, 'show'])->name('tasks.show');
     Route::get('tasks/{task}/edit', [Controllers\TaskController::class, 'edit'])->name('tasks.edit');
     Route::put('tasks/{task}', [Controllers\TaskController::class, 'update'])->name('tasks.update');
+    Route::post('tasks/{task}/priority', [Controllers\TaskController::class, 'priority'])->name('tasks.priority');
     Route::post('tasks/{task}/status', [Controllers\TaskController::class, 'status'])->name('tasks.status');
     Route::post('tasks/{task}/comments', [Controllers\TaskController::class, 'comment'])->name('tasks.comments.store');
     Route::post('tasks/{task}/time', [Controllers\TaskController::class, 'logTime'])->name('tasks.time.store');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Role;
+use App\Models\ActivityLog;
 use App\Models\User;
 use App\Support\Activity;
 use Illuminate\Http\RedirectResponse;
@@ -48,7 +49,10 @@ class UserController extends Controller implements HasMiddleware
 
     public function edit(User $user): View
     {
-        return view('users.form', compact('user'));
+        $history = ActivityLog::query()->with('user')->where('subject_type', $user->getMorphClass())
+            ->where('subject_id', $user->id)->latest('id')->limit(20)->get();
+
+        return view('users.form', compact('user', 'history'));
     }
 
     public function update(Request $request, User $user): RedirectResponse
@@ -76,7 +80,12 @@ class UserController extends Controller implements HasMiddleware
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user)],
+            'email' => ['bail', 'required', 'email', 'max:255', function (string $attribute, mixed $value, \Closure $fail) use ($user) {
+                // Deleted accounts keep their email (the column is unique), so point the admin to Trash instead.
+                if (User::onlyTrashed()->where('email', $value)->whereKeyNot($user?->id)->exists()) {
+                    $fail('This email belongs to a deleted user. Restore that account from Trash instead of creating a new one.');
+                }
+            }, Rule::unique('users')->ignore($user)],
             'role' => ['required', Rule::enum(Role::class)],
             'job_title' => ['nullable', 'string', 'max:255'],
             'skills' => ['nullable', 'string', 'max:500'],

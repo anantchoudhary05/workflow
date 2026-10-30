@@ -43,7 +43,7 @@ class ClientActionController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'requested_at' => ['required', 'date', 'before_or_equal:today'],
             'next_follow_up_at' => ['nullable', 'date', 'after_or_equal:requested_at'],
-            'owner_id' => ['nullable', 'exists:users,id'],
+            'owner_id' => ['nullable', 'exists:users,id,deleted_at,NULL'],
         ]);
         $project = $this->visibleProject((int) $data['project_id']);
         $action = new ClientAction($data + ['client_id' => $project->client_id]);

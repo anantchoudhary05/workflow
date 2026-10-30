@@ -7,6 +7,7 @@ use App\Enums\TaskStatus;
 use App\Http\Requests\TaskRequest;
 use App\Models\Project;
 use App\Models\Task;
+use App\Services\Notifier;
 use App\Services\TaskWorkflow;
 use App\Support\Activity;
 use Illuminate\Database\Eloquent\Builder;
@@ -119,6 +120,25 @@ class TaskController extends Controller
             : back()->with('status', "Task moved to {$task->status->label()}.");
     }
 
+    /** Manager sets a task's priority (including Urgent) from the task page; the assignee is told when it becomes urgent. */
+    public function priority(Request $request, Task $task): RedirectResponse
+    {
+        $this->authorize('setPriority', $task);
+        $data = $request->validate(['priority' => ['required', Rule::enum(Priority::class)]]);
+        $task->priority = Priority::from($data['priority']);
+        $diff = Activity::diff($task, ['priority']);
+        if (! $diff) {
+            return back();
+        }
+        $task->save();
+        Activity::log('task.priority', "Task \"{$task->title}\" priority set to {$task->priority->label()}", $task, $diff);
+        if ($task->priority === Priority::Urgent) {
+            Notifier::send($task->assignee, "Urgent: {$task->title}", route('tasks.show', $task), 'warning');
+        }
+
+        return back()->with('status', "Priority set to {$task->priority->label()}.");
+    }
+
     public function comment(Request $request, Task $task): RedirectResponse
     {
         $this->authorize('comment', $task);
@@ -152,7 +172,7 @@ class TaskController extends Controller
         return Task::query()->visibleTo($user)
             ->with(['project:id,code,name', 'assignee:id,name', 'reviewer:id,name', 'milestone:id,name'])
             ->when($request->query('project'), fn ($q, $p) => $q->where('project_id', $p))
-            ->when($request->query('assignee'), fn ($q, $a) => $q->where('assignee_id', $a === 'me' ? $user->id : $a))
+            ->when($request->query('assignee'), fn ($q, $a) => $a === 'none' ? $q->whereNull('assignee_id') : $q->where('assignee_id', $a === 'me' ? $user->id : (int) $a))
             ->when($request->query('priority'), fn ($q, $p) => $q->where('priority', $p))
             ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s),
                 fn ($q) => $hideClosed ? $q->open() : $q->where(fn ($w) => $w->open()->orWhere('completed_at', '>=', now()->subDays(14))))

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Enums\Role;
 use App\Models\Project;
+use App\Models\Todo;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\View\View as ViewContract;
@@ -20,9 +21,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Inactive users can do nothing; administrators can do everything that passes workflow rules.
-        Gate::before(function (User $user) {
+        // Personal to-dos are the exception: they stay private even from administrators (TodoPolicy decides).
+        Gate::before(function (User $user, string $ability, array $arguments = []) {
             if (! $user->is_active) {
                 return false;
+            }
+            if (($arguments[0] ?? null) instanceof Todo || ($arguments[0] ?? null) === Todo::class) {
+                return null;
             }
 
             return $user->isAdmin() ? true : null;
@@ -34,8 +39,11 @@ class AppServiceProvider extends ServiceProvider
             Gate::define($ability, fn (User $user) => $user->hasAbility($ability));
         }
 
-        // Administrator-only actions (creating clients/projects, quotations, approvals, overrides...).
+        // Administrator-only: user and role management and workflow overrides. Day-to-day actions use the granular abilities above.
         Gate::define('manage', fn (User $user) => false);
+
+        // Soft delete with a reason, the Trash page and restore: administrators only (checked explicitly as well as via Gate::before).
+        Gate::define('delete-records', fn (User $user) => $user->isAdmin());
 
         // Ability + record-level project access, e.g. Gate::authorize('project-ability', [$project, 'manage-qa']).
         Gate::define('project-ability', fn (User $user, Project $project, string $ability) => $user->hasAbility($ability) && $user->canAccessProject($project->id));

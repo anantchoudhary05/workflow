@@ -27,13 +27,45 @@
                     @if ($project->original_due_date && $project->due_date && ! $project->original_due_date->equalTo($project->due_date))
                         <p class="text-xs text-warning">Originally {{ $project->original_due_date->format('d M Y') }}</p>
                     @endif
-                    @can('update', $project)
+                    @can('project-ability', [$project, 'set-deadlines'])
                         <button type="button" class="link mt-1 text-xs" data-dialog-open="change-due-date">Change date</button>
                     @endcan
                 </div>
             </div>
 
             <div class="alert tone-info flex items-start gap-2"><x-icon name="info" class="mt-0.5" /><div><p class="font-medium">Next action</p><p>{{ $nextAction }}</p></div></div>
+
+            @if ($project->awaitingHandoffAck())
+                <div class="alert tone-warning flex flex-wrap items-start justify-between gap-3">
+                    <div class="flex items-start gap-2"><x-icon name="briefcase" class="mt-0.5" /><div>
+                        <p class="font-medium">Handed to the dev team by {{ $project->handedOffBy?->name ?? 'Marketing' }} · {{ $project->handed_off_at->format('d M Y H:i') }}</p>
+                        <p class="whitespace-pre-line">{{ $project->handoff_notes }}</p>
+                    </div></div>
+                    @can('project-ability', [$project, 'receive-handoffs'])
+                        <form method="POST" action="{{ route('projects.handoff.acknowledge', $project) }}">@csrf<button class="btn btn-primary btn-sm"><x-icon name="check" :size="14" /> Acknowledge handoff</button></form>
+                    @endcan
+                </div>
+            @endif
+
+            @if ($project->client)
+                @include('partials.client-documents', ['client' => $project->client, 'documents' => $clientDocuments, 'canUpload' => $canUploadClientDocs])
+            @endif
+
+            <x-card title="Project files" icon="folder" :padded="false">
+                <x-slot:actions><a href="{{ route('projects.files', $project) }}" class="link">All files</a></x-slot:actions>
+                <ul class="divide-y divide-line">
+                    @forelse ($projectFiles as $file)
+                        <li class="flex items-center justify-between gap-3 px-4 py-2">
+                            <div class="min-w-0"><a class="link truncate font-medium" href="{{ route('files.download', $file) }}">{{ $file->original_name }}</a><p class="text-xs text-muted">{{ $file->category->label() }} · {{ $file->humanSize() }} · {{ $file->uploader?->name }} · {{ $file->created_at?->format('d M Y') }}</p></div>
+                            <a class="btn btn-ghost btn-sm" href="{{ route('files.download', $file) }}" aria-label="Download {{ $file->original_name }}"><x-icon name="download" :size="14" /></a>
+                        </li>
+                    @empty
+                        <li class="px-4 py-4 text-muted">No project files yet. Use the Files tab to upload designs, exports and deliverables.</li>
+                    @endforelse
+                </ul>
+            </x-card>
+
+            @include('partials.todo-panel', ['todos' => $myTodos, 'project' => $project])
 
             <x-card title="Milestones" :padded="false">
                 <x-slot:actions><a href="{{ route('projects.milestones', $project) }}" class="link">Manage</a></x-slot:actions>
@@ -67,21 +99,58 @@
         </div>
 
         <div class="flex flex-col gap-6">
-            @can('update', $project)
+            @php($me = auth()->user())
+            @php($canHandOff = $me->can('project-ability', [$project, 'hand-off-projects']))
+            @php($canRequestReview = $me->can('project-ability', [$project, 'request-review']))
+            @if ($me->can('update', $project) || $canHandOff || $canRequestReview)
                 <x-card title="Workflow">
                     <div class="flex flex-col gap-2">
-                        @if ($statusOptions)
-                            <button type="button" class="btn btn-primary" data-dialog-open="change-status"><x-icon name="activity" :size="16" /> Change status</button>
+                        @can('update', $project)
+                            @if ($statusOptions)
+                                <button type="button" class="btn btn-primary" data-dialog-open="change-status"><x-icon name="activity" :size="16" /> Change status</button>
+                            @endif
+                            <a href="{{ route('projects.edit', $project) }}" class="btn"><x-icon name="edit" :size="16" /> Edit details</a>
+                        @endcan
+                        @if ($canRequestReview && ! $project->isClosed())
+                            <button type="button" class="btn" data-dialog-open="request-review"><x-icon name="eye" :size="16" /> Request manager review</button>
                         @endif
-                        <a href="{{ route('projects.edit', $project) }}" class="btn"><x-icon name="edit" :size="16" /> Edit details</a>
-                        @if ($project->status === App\Enums\ProjectStatus::Delivered)
+                        @if ($canHandOff && ! $project->isClosed())
+                            <button type="button" class="btn" data-dialog-open="hand-off"><x-icon name="rocket" :size="16" /> {{ $project->handed_off_at ? 'Send updated handoff' : 'Send to dev team' }}</button>
+                        @endif
+                        @if ($project->status === App\Enums\ProjectStatus::Delivered && $me->can('project-ability', [$project, 'close-projects']))
                             <button type="button" class="btn" data-dialog-open="close-project">Close project</button>
-                        @elseif ($project->status === App\Enums\ProjectStatus::Closed)
+                        @elseif ($project->status === App\Enums\ProjectStatus::Closed && $me->can('manage'))
                             <button type="button" class="btn" data-dialog-open="reopen-project">Reopen project</button>
                         @endif
                     </div>
                 </x-card>
-            @endcan
+            @endif
+
+            @if ($reviewRequests->isNotEmpty() || $canRequestReview)
+                <x-card title="Manager review" icon="badge-check" :padded="false">
+                    @canany(['approve-for-preview', 'request-review'])
+                        <x-slot:actions><a href="{{ route('reviews.index') }}" class="link">Review queue</a></x-slot:actions>
+                    @endcanany
+                    <ul class="divide-y divide-line text-sm">
+                        @forelse ($reviewRequests as $review)
+                            <li class="px-4 py-2.5">
+                                <p class="flex flex-wrap items-center justify-between gap-2"><span class="font-medium">{{ $review->title }}</span><x-badge :enum="$review->status" /></p>
+                                <p class="text-xs text-muted">{{ $review->requester?->name }} · {{ $review->created_at?->format('d M Y') }}@if ($review->decided_at) · decided by {{ $review->decider?->name }} {{ $review->decided_at->format('d M') }}@endif</p>
+                                @if ($review->decision_notes)<p class="mt-1 whitespace-pre-line text-xs">{{ $review->decision_notes }}</p>@endif
+                            </li>
+                        @empty
+                            <li class="px-4 py-4 text-muted">No reviews requested yet. Ask the Manager whether the work is ready for client preview.</li>
+                        @endforelse
+                    </ul>
+                </x-card>
+            @endif
+
+            @if ($project->handed_off_at && ! $project->awaitingHandoffAck())
+                <x-card title="Marketing handoff" icon="briefcase">
+                    <p class="text-sm">Sent by {{ $project->handedOffBy?->name ?? 'Marketing' }} on {{ $project->handed_off_at->format('d M Y') }}; acknowledged by {{ $project->handoffAcknowledgedBy?->name }} on {{ $project->handoff_acknowledged_at?->format('d M Y') }}.</p>
+                    @if ($project->handoff_notes)<p class="mt-2 whitespace-pre-line text-sm text-muted">{{ $project->handoff_notes }}</p>@endif
+                </x-card>
+            @endif
 
             <x-card title="Details">
                 <dl class="grid gap-3 text-sm">
@@ -157,6 +226,29 @@
         </div>
     </div>
 
+    @if ($canRequestReview)
+        <x-dialog id="request-review" title="Request manager review" icon="eye">
+            <form method="POST" action="{{ route('projects.review-requests.store', $project) }}" class="flex flex-col gap-4">
+                @csrf
+                <x-field name="title" label="What should be reviewed?" placeholder="e.g. Home and checkout pages – ready for client preview?" required />
+                <x-field name="url" type="url" label="Link (staging / preview)" :value="$project->staging_url" />
+                <x-field name="notes" type="textarea" label="Notes for the Manager" />
+                <div class="flex justify-end gap-2"><button type="button" class="btn" data-dialog-close>Cancel</button><button class="btn btn-primary">Send for review</button></div>
+            </form>
+        </x-dialog>
+    @endif
+
+    @if ($canHandOff)
+        <x-dialog id="hand-off" title="Send to dev team" icon="rocket">
+            <form method="POST" action="{{ route('projects.handoff', $project) }}" class="flex flex-col gap-4">
+                @csrf
+                <p class="text-sm text-muted">Team Leads are notified and can acknowledge the handoff. Make sure the client details, requirements and client documents are in place first.</p>
+                <x-field name="handoff_notes" type="textarea" label="Handoff summary" :rows="6" required placeholder="Client contact, key requirements, agreed timeline, meetings held, where the documents are…" />
+                <div class="flex justify-end gap-2"><button type="button" class="btn" data-dialog-close>Cancel</button><button class="btn btn-primary">Send to dev team</button></div>
+            </form>
+        </x-dialog>
+    @endif
+
     @can('update', $project)
         <x-dialog id="change-status" title="Change project status">
             <form method="POST" action="{{ route('projects.status', $project) }}" class="flex flex-col gap-4">
@@ -170,7 +262,9 @@
                 <div class="flex justify-end gap-2"><button type="button" class="btn" data-dialog-close>Cancel</button><button class="btn btn-primary">Update status</button></div>
             </form>
         </x-dialog>
+    @endcan
 
+    @can('project-ability', [$project, 'set-deadlines'])
         <x-dialog id="change-due-date" title="Change delivery date">
             <form method="POST" action="{{ route('projects.due-date', $project) }}" class="flex flex-col gap-4">
                 @csrf
@@ -180,8 +274,9 @@
                 <div class="flex justify-end gap-2"><button type="button" class="btn" data-dialog-close>Cancel</button><button class="btn btn-primary">Record change</button></div>
             </form>
         </x-dialog>
+    @endcan
 
-        @if ($project->status === App\Enums\ProjectStatus::Delivered)
+    @if ($project->status === App\Enums\ProjectStatus::Delivered && auth()->user()->can('project-ability', [$project, 'close-projects']))
             <x-dialog id="close-project" title="Close project">
                 <form method="POST" action="{{ route('projects.close', $project) }}" class="flex flex-col gap-4">
                     @csrf
@@ -194,7 +289,7 @@
                     <div class="flex justify-end gap-2"><button type="button" class="btn" data-dialog-close>Cancel</button><button class="btn btn-primary">Close project</button></div>
                 </form>
             </x-dialog>
-        @elseif ($project->status === App\Enums\ProjectStatus::Closed)
+    @elseif ($project->status === App\Enums\ProjectStatus::Closed && auth()->user()->can('manage'))
             <x-dialog id="reopen-project" title="Reopen project">
                 <form method="POST" action="{{ route('projects.reopen', $project) }}" class="flex flex-col gap-4">
                     @csrf
@@ -202,6 +297,5 @@
                     <div class="flex justify-end gap-2"><button type="button" class="btn" data-dialog-close>Cancel</button><button class="btn btn-primary">Reopen</button></div>
                 </form>
             </x-dialog>
-        @endif
-    @endcan
+    @endif
 @endsection

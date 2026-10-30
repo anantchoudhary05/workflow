@@ -24,7 +24,12 @@
                                 <td><x-badge :enum="$user->role" /></td>
                                 <td>{{ $user->weekly_capacity_hours !== null ? (float) $user->weekly_capacity_hours.' h/week' : '—' }}</td>
                                 <td><x-badge :tone="$user->is_active ? 'success' : 'neutral'">{{ $user->is_active ? 'Active' : 'Inactive' }}</x-badge></td>
-                                <td class="text-right"><a class="btn btn-ghost btn-sm" href="{{ route('users.edit', $user) }}"><x-icon name="edit" :size="14" /> Edit</a></td>
+                                <td class="text-right"><div class="inline-flex items-center gap-1"><a class="btn btn-ghost btn-sm" href="{{ route('users.edit', $user) }}"><x-icon name="edit" :size="14" /> Edit</a>
+                                    @unless ($user->is(auth()->user()))
+                                        @include('partials.delete-record', ['id' => 'delete-user-'.$user->id, 'action' => route('users.destroy', $user), 'label' => $user->name, 'small' => true,
+                                            'note' => 'They are signed out and can no longer sign in. Their tasks, comments and history stay and show them as a deleted user.'])
+                                    @endunless
+                                </div></td>
                             </tr>
                         @endforeach
                     </tbody>

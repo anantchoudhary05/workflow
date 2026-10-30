@@ -25,7 +25,7 @@ class ScopeController extends Controller
 
     public function store(Request $request, Project $project, ScopeService $scope): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('project-ability', [$project, 'decide-requirements']);
         $this->authorize('view', $project);
         $data = $request->validate([
             'summary' => ['required', 'string', 'max:10000'],

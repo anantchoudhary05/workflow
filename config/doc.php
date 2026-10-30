@@ -19,6 +19,8 @@ return [
         'disk' => 'local', // private disk: storage/app/private
         'max_kb' => 20480,
         'mimes' => 'pdf,png,jpg,jpeg,gif,webp,txt,csv,md,doc,docx,xls,xlsx,ppt,pptx,zip',
+        // Client documents (Clients > Documents): same private disk and size limit, office/PDF/image/text/zip only.
+        'client_document_mimes' => 'pdf,doc,docx,xls,xlsx,ppt,pptx,png,jpg,jpeg,gif,webp,txt,zip',
     ],
 
     'checklists' => [

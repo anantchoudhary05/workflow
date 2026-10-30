@@ -26,7 +26,7 @@ class Preview extends Model
 
     public function sharer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'shared_by');
+        return $this->belongsTo(User::class, 'shared_by')->withTrashed();
     }
 
     public function approvals(): MorphMany

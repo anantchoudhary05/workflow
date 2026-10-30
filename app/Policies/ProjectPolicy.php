@@ -17,18 +17,21 @@ class ProjectPolicy
         return $user->canAccessProject($project->id);
     }
 
+    /** Marketing onboards new projects; Managers may also create them. */
     public function create(User $user): bool
     {
-        return false; // administrators only (Gate::before)
+        return $user->hasAbility('create-projects');
     }
 
+    /** Edit details, status, team. Managers and Team Leads. */
     public function update(User $user, Project $project): bool
     {
-        return false;
+        return $user->hasAbility('manage-projects') && $user->canAccessProject($project->id);
     }
 
+    /** Soft delete with a reason (restorable from Trash): administrators only. */
     public function delete(User $user, Project $project): bool
     {
-        return false;
+        return $user->isAdmin();
     }
 }

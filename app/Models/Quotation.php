@@ -12,6 +12,9 @@ class Quotation extends Model
 {
     use BelongsToProject;
 
+    /** Also hidden while its client is deleted. */
+    public const SCOPED_TO_CLIENT = true;
+
     protected $fillable = ['title', 'currency', 'valid_until', 'payment_terms', 'scope_summary', 'exclusions', 'assumptions', 'delivery_period', 'notes', 'discount_amount', 'tax_rate', 'scope_version_id'];
 
     protected function casts(): array
@@ -49,12 +52,12 @@ class Quotation extends Model
 
     public function decider(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'decided_by');
+        return $this->belongsTo(User::class, 'decided_by')->withTrashed();
     }
 
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'created_by')->withTrashed();
     }
 
     public function isLocked(): bool

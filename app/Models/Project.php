@@ -6,6 +6,7 @@ use App\Enums\HandoverStatus;
 use App\Enums\Priority;
 use App\Enums\ProjectStatus;
 use App\Enums\ProjectType;
+use App\Models\Concerns\RecordsDeletion;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Project extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, RecordsDeletion, SoftDeletes;
 
     // status, handover_status, approved_* and closure fields are set only by workflow services.
     protected $fillable = ['name', 'client_id', 'type', 'description', 'manager_id', 'start_date', 'due_date', 'launch_date', 'priority', 'estimated_hours', 'internal_notes', 'client_summary', 'repository_url', 'staging_url', 'production_url'];
@@ -35,6 +36,8 @@ class Project extends Model
             'launch_date' => 'date',
             'completed_at' => 'datetime',
             'closed_at' => 'datetime',
+            'handed_off_at' => 'datetime',
+            'handoff_acknowledged_at' => 'datetime',
             'estimated_hours' => 'decimal:2',
         ];
     }
@@ -42,10 +45,30 @@ class Project extends Model
     protected static function booted(): void
     {
         static::creating(function (Project $p) {
+            $p->created_by ??= auth()->id();
             $p->code ??= sprintf('PRJ-%04d', (static::withTrashed()->max('id') ?? 0) + 1);
             $p->status ??= ProjectStatus::Lead;
             $p->original_due_date ??= $p->due_date;
         });
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by')->withTrashed();
+    }
+
+    /**
+     * Who created the record: the created_by column (set for records created from 30 Oct 2026), otherwise the
+     * user on the oldest activity-log entry for the record, otherwise null (the page then hides the line).
+     */
+    public function creatorName(): ?string
+    {
+        if ($this->created_by && $this->creator) {
+            return $this->creator->name;
+        }
+
+        return ActivityLog::query()->where('subject_type', $this->getMorphClass())->where('subject_id', $this->getKey())
+            ->whereNotNull('user_id')->oldest('id')->first()?->user?->name;
     }
 
     public function client(): BelongsTo
@@ -55,12 +78,33 @@ class Project extends Model
 
     public function manager(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'manager_id');
+        return $this->belongsTo(User::class, 'manager_id')->withTrashed();
+    }
+
+    public function handedOffBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'handed_off_by')->withTrashed();
+    }
+
+    public function handoffAcknowledgedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'handoff_acknowledged_by')->withTrashed();
+    }
+
+    public function reviewRequests(): HasMany
+    {
+        return $this->hasMany(ReviewRequest::class);
+    }
+
+    /** Handed off by Marketing and not yet acknowledged by a Team Lead. */
+    public function awaitingHandoffAck(): bool
+    {
+        return $this->handed_off_at !== null && $this->handoff_acknowledged_at === null;
     }
 
     public function closer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'closed_by');
+        return $this->belongsTo(User::class, 'closed_by')->withTrashed();
     }
 
     public function members(): BelongsToMany

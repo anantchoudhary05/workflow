@@ -1,7 +1,14 @@
 @extends('layouts.app')
 @section('title', $user->exists ? 'Edit user' : 'New user')
 @section('content')
-    <x-page-header :title="$user->exists ? 'Edit '.$user->name : 'New user'" :back="route('users.index')" />
+    <x-page-header :title="$user->exists ? 'Edit '.$user->name : 'New user'" :back="route('users.index')">
+        <x-slot:actions>
+            @if ($user->exists && ! $user->is(auth()->user()))
+                @include('partials.delete-record', ['id' => 'delete-user', 'action' => route('users.destroy', $user), 'label' => $user->name,
+                    'note' => 'They are signed out and can no longer sign in. Their tasks, comments and history stay and show them as a deleted user.'])
+            @endif
+        </x-slot:actions>
+    </x-page-header>
     <form method="POST" action="{{ $user->exists ? route('users.update', $user) : route('users.store') }}" class="max-w-2xl">
         @csrf
         @if ($user->exists) @method('PUT') @endif
@@ -18,6 +25,22 @@
                 <x-field name="is_active" type="checkbox" label="Active (can sign in)" :value="$user->exists ? $user->is_active : true" />
             </div>
         </x-card>
+        <x-card title="Which role to choose" icon="shield" class="mt-4" data-role-guide>
+            <dl class="grid gap-2 text-sm">
+                @foreach (App\Enums\Role::cases() as $role)
+                    <div class="flex flex-wrap items-baseline gap-2"><dt class="w-40 shrink-0"><x-badge :enum="$role" /></dt><dd class="flex-1 text-muted">{{ $role->description() }}</dd></div>
+                @endforeach
+            </dl>
+        </x-card>
         <div class="mt-4 flex justify-end gap-2"><a class="btn" href="{{ route('users.index') }}">Cancel</a><button class="btn btn-primary">Save user</button></div>
     </form>
+    @if ($user->exists)
+        <x-card title="History" class="mt-6 max-w-2xl" data-user-history>
+            @if ($history->isEmpty())
+                <p class="text-sm text-muted">No history yet.</p>
+            @else
+                <ul class="divide-y divide-line">@include('partials.activity-list', ['logs' => $history])</ul>
+            @endif
+        </x-card>
+    @endif
 @endsection

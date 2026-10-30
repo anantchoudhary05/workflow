@@ -11,6 +11,9 @@ class Communication extends Model
 {
     use BelongsToProject;
 
+    /** Also hidden while its client is deleted. */
+    public const SCOPED_TO_CLIENT = true;
+
     protected $fillable = ['client_id', 'project_id', 'type', 'direction', 'subject', 'summary', 'occurred_at', 'outcome', 'next_action'];
 
     protected function casts(): array
@@ -25,6 +28,6 @@ class Communication extends Model
 
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'owner_id');
+        return $this->belongsTo(User::class, 'owner_id')->withTrashed();
     }
 }

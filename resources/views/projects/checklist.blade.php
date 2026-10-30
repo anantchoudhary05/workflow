@@ -11,10 +11,10 @@
                 </x-slot:actions>
                 @if ($items->isEmpty())
                     <x-empty-state :title="'No '.$type.' checklist yet'" icon="check-square">
-                        @can('manage')
+                        @can('manage-release')
                             <form method="POST" action="{{ route('projects.checklist.generate', [$project, $type]) }}" class="mt-3">@csrf<button class="btn btn-primary">Create from standard template</button></form>
                         @else
-                            An administrator creates this checklist from the standard template.
+                            A Team Lead or Manager creates this checklist from the standard template.
                         @endcan
                     </x-empty-state>
                 @else
@@ -37,7 +37,7 @@
                             </li>
                         @endforeach
                     </ul>
-                    @can('manage')
+                    @can('manage-release')
                         <form method="POST" action="{{ route('projects.checklist.store', [$project, $type]) }}" class="flex flex-wrap items-end gap-3 border-t border-line p-4">
                             @csrf
                             <x-field name="label" label="Add item" class="min-w-60 flex-1" required />
@@ -53,7 +53,7 @@
             @if ($isHandover)
                 <x-card title="Handover">
                     <p class="text-sm">Status: @if ($project->handover_status)<x-badge :enum="$project->handover_status" />@else <span class="text-muted">Not started</span>@endif</p>
-                    @can('manage')
+                    @can('manage-release')
                         @if ($project->status === App\Enums\ProjectStatus::Delivered)
                             <form method="POST" action="{{ route('projects.handover-status', $project) }}" class="mt-4 flex flex-col gap-3">
                                 @csrf
@@ -77,7 +77,7 @@
                     @empty
                         <p class="text-sm text-muted">No acceptance recorded.</p>
                     @endforelse
-                    @can('manage')<button type="button" class="btn btn-sm mt-2" data-dialog-open="acceptance">Record acceptance</button>@endcan
+                    @can('record-client-approvals')<button type="button" class="btn btn-sm mt-2" data-dialog-open="acceptance">Record acceptance</button>@endcan
                 </x-card>
             @else
                 <x-card title="About this checklist"><p class="text-sm text-muted">Mandatory items must be done before the project can be closed. QA reviewers can update these items.</p></x-card>
@@ -99,7 +99,7 @@
         @endforeach
     @endif
     @if ($isHandover)
-        @can('manage')
+        @can('record-client-approvals')
             <x-dialog id="acceptance" title="Record final acceptance">
                 <form method="POST" action="{{ route('projects.acceptance', $project) }}" class="flex flex-col gap-4">
                     @csrf

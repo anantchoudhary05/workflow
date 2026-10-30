@@ -34,7 +34,7 @@ class MilestoneController extends Controller
 
     public function store(Request $request, Project $project): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('project-ability', [$project, 'manage-milestones']);
         $this->authorize('view', $project);
         $data = $this->validated($request, $project);
         DB::transaction(function () use ($data, $project) {
@@ -52,7 +52,7 @@ class MilestoneController extends Controller
 
     public function update(Request $request, Milestone $milestone): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('project-ability', [$milestone->project, 'manage-milestones']);
         $data = $this->validated($request, $milestone->project, $milestone);
         $milestone->fill(collect($data)->except('depends_on')->all());
         $changes = Activity::diff($milestone, ['name', 'due_date', 'owner_id', 'criteria_met', 'requires_approval', 'weight']);
@@ -65,7 +65,7 @@ class MilestoneController extends Controller
 
     public function status(Request $request, Milestone $milestone, MilestoneWorkflow $workflow): RedirectResponse
     {
-        $this->authorize('manage');
+        $this->authorize('project-ability', [$milestone->project, 'manage-milestones']);
         $data = $request->validate([
             'status' => ['required', Rule::enum(MilestoneStatus::class)],
             'override_reason' => ['nullable', 'string', 'max:2000'],
@@ -80,7 +80,7 @@ class MilestoneController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
-            'owner_id' => ['nullable', 'exists:users,id'],
+            'owner_id' => ['nullable', 'exists:users,id,deleted_at,NULL'],
             'start_date' => ['nullable', 'date'],
             'due_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'priority' => ['required', Rule::enum(Priority::class)],

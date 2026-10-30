@@ -7,6 +7,7 @@ import { initKanban } from './modules/kanban';
 import { initRepeaters } from './modules/repeaters';
 import { initAutosubmit } from './modules/autosubmit';
 import { initPrint } from './modules/print';
+import { initDocSource } from './modules/doc-source';
 
 document.addEventListener('DOMContentLoaded', () => {
     initSidebar();
@@ -18,4 +19,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initRepeaters();
     initAutosubmit();
     initPrint();
+    initDocSource();
 });

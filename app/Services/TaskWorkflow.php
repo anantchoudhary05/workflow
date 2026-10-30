@@ -28,10 +28,10 @@ class TaskWorkflow
         if ($to === TaskStatus::InReview && ! $task->reviewer_id) {
             throw new WorkflowException('Assign a reviewer before submitting the task for review.');
         }
-        // Approving review work: only the reviewer, a QA reviewer or an admin.
+        // Completing a review: the assigned reviewer, a Team Lead/Manager ("review-work") or an administrator.
         if ($from === TaskStatus::InReview && in_array($to, [TaskStatus::Done, TaskStatus::ChangesRequested], true)
-            && ! ($user->isAdmin() || $user->id === $task->reviewer_id)) {
-            throw new WorkflowException('Only the assigned reviewer or an administrator can complete a review.');
+            && ! ($user->hasAbility('review-work') || $user->id === $task->reviewer_id)) {
+            throw new WorkflowException('Only the assigned reviewer, a Team Lead, a Manager or an administrator can complete a review.');
         }
         if ($to === TaskStatus::ChangesRequested && blank($reason)) {
             throw new WorkflowException('Describe the changes requested.');

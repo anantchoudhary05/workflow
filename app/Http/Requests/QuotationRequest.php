@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Quotation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -9,7 +10,12 @@ class QuotationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('manage');
+        $quotation = $this->route('quotation');
+        $project = $this->route('project');
+
+        return $quotation
+            ? $this->user()->can('update', $quotation)
+            : $this->user()->can('create', Quotation::class) && $project && $this->user()->canAccessProject($project->id);
     }
 
     public function rules(): array
