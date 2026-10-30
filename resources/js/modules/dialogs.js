@@ -28,6 +28,14 @@ export function initDialogs() {
         failed.querySelector('[aria-invalid="true"]')?.focus();
     }
 
+    // A link ending in #dialog-id (e.g. "Add the first milestone") opens that dialog, but only when the page also shows
+    // its own opener button, i.e. the server rendered the action for this user.
+    const hashId = location.hash.length > 1 ? decodeURIComponent(location.hash.slice(1)) : '';
+    const linked = hashId && !failed ? document.getElementById(hashId) : null;
+    if (linked instanceof HTMLDialogElement && !linked.open && document.querySelector(`[data-dialog-open="${CSS.escape(hashId)}"]`)) {
+        linked.showModal();
+    }
+
     // Show a busy state on submit so forms are not submitted twice.
     document.addEventListener('submit', (e) => {
         const btn = e.submitter ?? e.target.querySelector('button[type="submit"], button:not([type])');

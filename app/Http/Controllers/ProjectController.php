@@ -12,6 +12,7 @@ use App\Models\Client;
 use App\Models\ClientDocument;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\MilestoneTrack;
 use App\Services\MyWork;
 use App\Services\ProjectHealth;
 use App\Services\ProjectWorkflow;
@@ -92,12 +93,19 @@ class ProjectController extends Controller
         $project = ProjectHealth::withData(Project::whereKey($project->id))->firstOrFail();
         $project->load(['client:id,name', 'manager:id,name', 'members', 'approvedScope', 'statusHistory.user:id,name', 'dateChanges.user:id,name', 'closer:id,name', 'handedOffBy:id,name', 'handoffAcknowledgedBy:id,name']);
 
+        $track = (new MilestoneTrack($project))->build();
+        // ?milestone={id|unplanned} opens that stop's detail panel on load (works without JavaScript and is linkable).
+        $wanted = is_string($request->query('milestone')) ? $request->query('milestone') : null;
+        $openStop = $wanted === null ? null : ($track['stops']->firstWhere('key', $wanted)?->key
+            ?? ($wanted === 'unplanned' && $track['unplanned'] ? 'unplanned' : null));
+
         return view('projects.show', [
             'project' => $project,
             'health' => ProjectHealth::evaluate($project),
             'progress' => ProjectHealth::progress($project),
             'nextAction' => ProjectHealth::nextAction($project),
-            'milestones' => $project->milestones()->limit(8)->get(),
+            'track' => $track,
+            'openStop' => $openStop,
             'waiting' => $project->clientActions()->where('status', 'waiting')->orderBy('requested_at')->get(),
             'activity' => $project->activities()->with('user:id,name')->limit(12)->get(),
             'users' => $this->userOptions(),

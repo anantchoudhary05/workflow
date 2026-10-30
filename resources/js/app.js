@@ -9,6 +9,8 @@ import { initAutosubmit } from './modules/autosubmit';
 import { initPrint } from './modules/print';
 import { initDocSource } from './modules/doc-source';
 import { initTabs } from './modules/tabs';
+import { initDisclosure } from './modules/disclosure';
+import { initMilestoneTrack } from './modules/milestone-track';
 
 document.addEventListener('DOMContentLoaded', () => {
     initSidebar();
@@ -22,4 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initPrint();
     initDocSource();
     initTabs();
+    initDisclosure();
+    initMilestoneTrack();
 });

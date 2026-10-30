@@ -53,6 +53,8 @@ Every dashboard shows **My to-dos** and the user's role. The rest depends on the
 - **Marketing:** pipeline, clients, handoffs sent to the dev team and whether they were picked up, recent client documents.
 - **Management:** portfolio KPIs, team load and recent activity (read-only).
 
+**Layout:** the top of every dashboard is a strip of at most four key numbers; the remaining numbers sit in a row of small chips below it. Widgets are grouped into two tabbed cards, **Needs attention** (urgent, reviews, handoffs, unassigned, blocked, waiting on client) and **Coming up** (own tasks, milestones, launches, pipeline, client documents, team). Only tabs that apply to the role are shown, each with its count, and the first tab with something in it opens by default. The last tab you chose is remembered for the browser session.
+
 ### Client documents
 
 On the client page (and in the client documents section of each of that client's projects), **Add document** gives two choices:
@@ -122,6 +124,26 @@ The side states are On Hold, Blocked and Cancelled.
 7. **Delivered.** This requires every mandatory item on the release checklist to be done, unless an administrator overrides.
 
 ## Milestones and tasks
+
+### Milestone journey (project overview)
+
+The **Overview** tab of every project shows the delivery journey: one stop per milestone, in plan order (sort order, then due date).
+
+- **The line** between stops fills with the share of that milestone's tasks that are done. A signed-off milestone fills its whole leg even if a task is still open. On desktop the journey runs left to right; on phones it runs top to bottom.
+- **Stop states:**
+  - **Completed:** the milestone's status is Completed. Green, with a check mark.
+  - **You are here:** the first milestone that is not completed. Shows its percentage.
+  - **Upcoming:** every later milestone. Muted.
+  - **Overdue:** past its due date and not completed. Red ring and an "Overdue" label.
+- Each stop shows the name, the due date (or the date it was completed) and "x/y tasks done". The header shows how many milestones and tasks are done, with an overall ring.
+- **Click a stop**, or focus it and press Enter or Space, to open its panel. It lists the tasks **completed in that milestone** (title, assignee initials, completed date, link to the task), newest first. Open tasks are folded below under "N still open". Click the stop again, press Escape or use the × to close. Arrow keys, Home and End move between stops. The open stop is kept in the address (`?milestone=ID`), so a link opens the same panel.
+- **Unplanned work** collects tasks that have no milestone. It opens the same kind of panel.
+- **Cancelled** tasks are not counted. Cancelled milestones are left off the journey and mentioned in a note. Deleted (trashed) tasks and milestones are left out.
+- **Completed log** (right-hand column): completed tasks and milestones, newest first, with who completed them and when (IST). "Who" is the person whose status change completed it, from the activity log; for older tasks without that entry it falls back to the assignee. The first five show; "Show more" reveals up to 20.
+- A project without milestones shows an empty state. People who may add milestones (Team Lead, Manager, Administrator) get an **Add the first milestone** button.
+- When the browser asks for reduced motion, the fills appear at once and the shimmer, pulse and glow animations are off.
+
+### Rules
 
 - **New tasks** start in Backlog by default. On the New task form you can choose Backlog, Ready or In Progress instead. Tasks cannot be added to closed projects.
 
